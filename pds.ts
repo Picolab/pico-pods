@@ -22,7 +22,7 @@ function isPodConnected() : boolean {
 	return true;
 }
 
-async function createFile(fileURL : string) : File {
+async function createFile(fileURL : string) : Promise<File> {
   let response = await fetch(fileURL);
   console.log("");
   console.log(response);
@@ -59,7 +59,8 @@ const pds: krl.Module = {
 		}
 		let podLocation : string = "";
 		
-		let file : File = createFile(fileURL);
+		let file : File = await createFile(fileURL);
+
 		
 		overwriteFile(getPod() + podLocation, file, { contentType: file.type });
 	}),
