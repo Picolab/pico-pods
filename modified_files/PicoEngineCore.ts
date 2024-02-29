@@ -19,7 +19,7 @@ import module_time from "./modules/time";
 import module_ursa from "./modules/ursa";
 import module_dido from "./modules/dido";
 import module_simple from "./modules/simple";
-import module_pds from "./modules/pds";
+import module_pods from "./modules/pods";
 import initMetaModule from "./modules/meta";
 import { PicoEngineCoreConfiguration } from "./PicoEngineCoreConfiguration";
 import { CachedRuleset, RulesetRegistry } from "./RulesetRegistry";
@@ -122,7 +122,7 @@ export class PicoEngineCore {
     this.modules["ursa"] = module_ursa;
     this.modules["dido"] = module_dido;
 	this.modules["simple"] = module_simple;
-	this.modules["pds"] = module_pds;
+	this.modules["pods"] = module_pods;
     this.modules["meta"] = initMetaModule(this);
 
     if (conf.modules) {
