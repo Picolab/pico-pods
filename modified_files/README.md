@@ -1,1 +1,1 @@
-Files in this folder are modified version of the Pico engine. These modifications work for both pds.ts and simple.ts.
+Files in this folder are modified files from the Pico engine. These modifications work for both pods.ts and simple.ts.
