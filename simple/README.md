@@ -1,0 +1,1 @@
+This folder contains a simple example module that works with https://jsonplaceholder.typicode.com.
