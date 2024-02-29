@@ -6,13 +6,13 @@ services:
       context: https://github.com/CommunitySolidServer/CommunitySolidServer.git
     image: community-solid-server
     ports:
-      # maps host machine port 3001 to container port 3000 (default port for SolidPods)
-      - "3001:3000"
+      # maps host machine port 3000 to container port 3000 (default port for SolidPods)
+      - "3000:3000"
 
   picolab-pico-engine:
     build:
       context: https://github.com/Picolab/pico-engine.git
     image: picolab-pico-engine
     ports:
-      # maps host machine port 3000 to container port 3000 (default port for pico engine)
-      - "3000:3000"
+      # maps host machine port 3001 to container port 3000 (default port for pico engine)
+      - "3001:3000"
