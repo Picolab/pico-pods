@@ -63,7 +63,7 @@ const store = krl.Action(["fileURL"], async function(fileURL : string) {
 	//overwriteFile(getPod() + podLocation, file, { contentType: file.type });
 });
 
-const pds: krl.Module = {
+const pods: krl.Module = {
 	connect_pod: connect_pod,
 	disconnect_pod: disconnect_pod,
 	store: store,
