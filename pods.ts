@@ -62,11 +62,40 @@ const store = krl.Action(["fileURL"], async function(fileURL : string) {
 	
 	//overwriteFile(getPod() + podLocation, file, { contentType: file.type });
 });
+const ls = krl.Function(["directoryURL"], async function(directoryURL : string) {
+    if (!await isPodConnected(this, [])) {
+		throw MODULE_NAME + ":ls cannot list Pod contents for an unconnected Pico.";
+	}
+
+    let newURL = await getPod(this, []);
+    newURL = newURL + directoryURL;
+
+    let data = await fetch(newURL)
+        .then(function(response) {
+            return response.text();
+        })
+        .then(function(data) {
+            return data;
+        });
+
+    data = data.substring(data.indexOf("contains"));
+    data = data.substring(9, data.indexOf("."));
+    let directory = data.split(", ");
+
+    for (let i = 0; i < directory.length; i++) {
+        const element = directory[i];
+        let newEl = element.substring(1, element.indexOf(">"));
+        directory[i] = newEl;
+    }
+    //console.log(directory);
+    return directory;
+});
 
 const pods: krl.Module = {
 	connect_pod: connect_pod,
 	disconnect_pod: disconnect_pod,
 	store: store,
+    ls: ls,
 
 	// getPod : getPod, //Private KRL helper function, does not need to be exported
 	// setPod : setPod, //Private KRL helper function, does not need to be exported

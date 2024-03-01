@@ -17,4 +17,9 @@ ruleset pods_test {
 		select when test store_file
 		pods:store(event:attrs.get("fileURL"))
 	}
+
+	rule test_ls {
+		select when test ls
+		pods:ls(event:attrs.get("directoryURL"))
+	}
 }
