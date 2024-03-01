@@ -2,10 +2,22 @@ import {
 	overwriteFile,
     getSolidDatasetWithAcl,
     getAgentAccess,
-    getAgentAccessAll
+    getAgentAccessAll,
+    hasResourceAcl,
+    hasFallbackAcl,
+    hasAccessibleAcl,
+    createAcl,
+    createAclFromFallbackAcl,
+    getResourceAcl,
+    setAgentResourceAccess,
+    saveAclFor,
+    getFile,
+    isRawData,
+    getContentType, 
+    getSourceUrl,
 } from '@inrupt/solid-client';
 import {
-    Session
+    Session,
 } from '@inrupt/solid-client-authn-node'
 
 let url : string = 'http://localhost:3000/test';
@@ -25,31 +37,30 @@ async function login() {
         oidcIssuer: 'http://localhost:3000'
     })
     .then(() => {
-        console.log("Login successful!");
-        getSolidDatasetWithAcl('http://localhost:3000')
-            .then((myDatasetWithAcl) => {
-                // Once the dataset with ACL is retrieved, call getAgentAccess and chain another .then() to it
-                return getAgentAccessAll(myDatasetWithAcl);
-            })
-            .then((agentAccess) => {
-                // This .then() block will execute after getAgentAccess resolves
-                // Output the response or perform any further actions with the agentAccess data
-                console.log(agentAccess);
-            })
-            .catch((error) => {
-                // Handle any errors that occur during the promise chain
-                console.error("Error:", error);
-            });
-        //uploadFile();
+        console.log('\nLogin successful!\n');
+        readFile();
+        // uploadFile();
     })
     .catch(error => {
-        console.error("Error login:", error);
+        console.error('Error login:', error);
     });
+}
+
+async function readFile() {
+    getFile(
+        `${url}/README`,
+        { fetch: fetch }
+    )
+    .then((file) => {
+        console.log(`Fetched a ${getContentType(file)} file from ${getSourceUrl(file)}.`);
+        console.log(`The file is ${isRawData(file) ? "not " : ""}a dataset.`);
+        console.log(file);
+    })
 }
 
 async function uploadFile(){
     overwriteFile(
-        url,
+        url + 'myFile.txt',
         new File(["This is a plain piece of text"], "myFile", { type: "text/plain" }),
         { fetch: fetch }
     )
