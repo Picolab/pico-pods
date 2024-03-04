@@ -94,10 +94,28 @@ async function readFile() {
     })
 }
 
-async function uploadFile(){
+async function createFileObject(fileURL : string) : Promise<File> {
+    let response = await fetch(fileURL);
+    let data = await response.blob()
+    console.log(data);
+    let data_type : string | null = await response.headers.get('content-type');
+    let metadata = {
+      type: <string | undefined>data_type,
+    };
+
+    //Get file name
+    let filename : string | undefined = fileURL.split('/').pop()
+
+    let file = new File([data], <string>filename, metadata);
+    return file;
+  }
+
+async function uploadFile(fileURL : string){
+    let file : File = await createFileObject(fileURL);
+
     overwriteFile(
-        url + 'myFile.txt',
-        new File(["This is a plain piece of text"], "myFile", { type: "text/plain" }),
+        url + file.name,
+        file,
         { fetch: fetch }
     )
     .then(() => {
@@ -117,7 +135,7 @@ async function first() {
     await ls()
     await readFile();
     await createFolder();
-    await uploadFile();
+    await uploadFile("https://raw.githubusercontent.com/keylanjensen/pico_simpleTest/main/simple_typescript_test.krl");
 }
 async function second() {
     await ls();
@@ -126,4 +144,4 @@ async function second() {
     await ls();
 }
 
-login();
+uploadFile("https://raw.githubusercontent.com/keylanjensen/pico_simpleTest/main/simple_typescript_test.krl");
