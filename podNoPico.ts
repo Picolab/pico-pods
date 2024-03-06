@@ -22,6 +22,7 @@ import {
 import {
     Session,
 } from '@inrupt/solid-client-authn-node'
+import axios from 'axios';
 
 let url : string = 'http://localhost:3000/test/';
 let webID : string = 'http://localhost:3000/test/profile/card#me';
@@ -108,9 +109,26 @@ async function createFileObject(fileURL : string) : Promise<File> {
 
     let file = new File([data], <string>filename, metadata);
     return file;
-  }
+}
+
+async function getFileSize(url: string): Promise<number> {
+    try {
+        const response = await axios.head(url);
+        const contentLength = response.headers['content-length'];
+
+        return contentLength ? parseInt(contentLength, 10) : -1;
+    } catch (error) {
+        console.error('An error occurred:', error);
+        return -1;
+    }
+}
 
 async function uploadFile(fileURL : string){
+    const size = getFileSize(fileURL);
+    if (await size / (1024*1024) > LIMIT) {
+        throw "The file size exceed 500 MB";
+    }
+	
     let file : File = await createFileObject(fileURL);
 
     overwriteFile(
