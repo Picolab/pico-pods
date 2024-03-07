@@ -20,35 +20,22 @@ import {
     deleteFile,
 } from '@inrupt/solid-client';
 import {
-    Session,
-} from '@inrupt/solid-client-authn-node'
+    createDpopHeader, 
+    generateDpopKeyPair,
+    buildAuthenticatedFetch,
+} from '@inrupt/solid-client-authn-core';
 import axios from 'axios';
 
 let url : string = 'http://localhost:3000/test/';
 let webID : string = 'http://localhost:3000/test/profile/card#me';
 let myClientID : string = 'testToke_1f5e0802-b16e-44d3-a0e5-78aecbfbbbda';
 let myClientSecret : string = '6cff217d1c31af7a991e6356608af95f89b10c468da51f498314e4107e38ef3f86cca85260ccaed91c9f0e7936b6b47c9281ee45451d86332248b728db8041cc';
-let session : Session = new Session();
+let authFetch;
+const LIMIT = 500;
 const fs = require("fs");
 
 function setUrl(newUrl : string) {
     url = newUrl;
-}
-
-async function login() {
-    await session.login({
-        clientId: myClientID,
-        clientSecret: myClientSecret,
-        oidcIssuer: 'http://localhost:3000'
-    })
-    .then(() => {
-        console.log('\nLogin successful!\n');
-    })
-    .catch(error => {
-        console.error('Error login:', error);
-    });
-    // await first();
-    await second();
 }
 
 async function ls() {
@@ -87,7 +74,7 @@ async function removeFolder() {
 async function readFile() {
     getFile(
         `${url}README`,
-        { fetch: fetch }
+        { fetch: authFetch }
     )
     .then((file) => {
         console.log(`Fetched a ${getContentType(file)} file from ${getSourceUrl(file)}.`);
@@ -140,7 +127,7 @@ async function uploadFile(fileURL : string){
     overwriteFile(
         url + file.name,
         file,
-        { fetch: fetch }
+        { fetch: authFetch }
     )
     .then(() => {
         console.log("File uploaded successfully!\n");
@@ -151,21 +138,81 @@ async function uploadFile(fileURL : string){
 }
 
 async function removeFile() {
-    await deleteFile( `${url}myFile.txt`, { fetch: fetch });
+    await deleteFile( `${url}myFile.txt`, { fetch: authFetch });
     console.log('File deleted successfully!\n');
 }
 
-async function first() {
-    await ls()
-    await readFile();
-    await createFolder();
-    await uploadFile("https://raw.githubusercontent.com/keylanjensen/pico_simpleTest/main/simple_typescript_test.krl");
-}
-async function second() {
-    await ls();
-    await removeFolder();
-    await removeFile();
-    await ls();
+async function authenticate() {
+    // A key pair is needed for encryption.
+    // This function from `solid-client-authn` generates such a pair for you.
+    const dpopKey = await generateDpopKeyPair();
+
+    // These are the ID and secret generated in the previous step.
+    // Both the ID and the secret need to be form-encoded.
+    const authString = `${encodeURIComponent(myClientID)}:${encodeURIComponent(myClientSecret)}`;
+    // This URL can be found by looking at the "token_endpoint" field at
+    // http://localhost:3000/.well-known/openid-configuration
+    // if your server is hosted at http://localhost:3000/.
+    const tokenUrl = 'http://localhost:3000/.oidc/token';
+    const response = await fetch(tokenUrl, {
+    method: 'POST',
+    headers: {
+        // The header needs to be in base64 encoding.
+        authorization: `Basic ${Buffer.from(authString).toString('base64')}`,
+        'content-type': 'application/x-www-form-urlencoded',
+        dpop: await createDpopHeader(tokenUrl, 'POST', dpopKey),
+    },
+    body: 'grant_type=client_credentials&scope=webid',
+    });
+
+    // This is the Access token that will be used to do an authenticated request to the server.
+    // The JSON also contains an "expires_in" field in seconds,
+    // which you can use to know when you need request a new Access token.
+    const { access_token: accessToken } = await response.json();
+
+    authFetch = await buildAuthenticatedFetch(accessToken, { dpopKey });
 }
 
-uploadFile("https://raw.githubusercontent.com/keylanjensen/pico_simpleTest/main/simple_typescript_test.krl");
+async function Login() {
+    // All these examples assume the server is running at `http://localhost:3000/`.
+
+    // First we request the account API controls to find out where we can log in
+    const indexResponse = await fetch('http://localhost:3000/.account/');
+    const { controls } = await indexResponse.json();
+
+    // And then we log in to the account API
+    const response = await fetch(controls.password.login, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ email: 'example@email.com', password: 'password' }),
+    });
+    // This authorization value will be used to authenticate in the next step
+    const { authorization } = await response.json();
+    await loginHelper(authorization);
+}
+
+async function loginHelper(authorization: string) {
+    // Now that we are logged in, we need to request the updated controls from the server.
+    // These will now have more values than in the previous example.
+    const indexResponse = await fetch('http://localhost:3000/.account/', { 
+        headers: { authorization: `CSS-Account-Token ${authorization}` }
+    });
+    const { controls } = await indexResponse.json();
+    
+    // Here we request the server to generate a token on our account
+    const response = await fetch(controls.account.clientCredentials, {
+        method: 'POST',
+        headers: { authorization: `CSS-Account-Token ${authorization}`, 'content-type': 'application/json' },
+        // The name field will be used when generating the ID of your token.
+        // The WebID field determines which WebID you will identify as when using the token.
+        // Only WebIDs linked to your account can be used.
+        body: JSON.stringify({ name: 'my-token', webId: webID }),
+    });
+    // These are the identifier and secret of your token.
+    // Store the secret somewhere safe as there is no way to request it again from the server!
+    // The `resource` value can be used to delete the token at a later point in time.
+    const { id, secret, resource } = await response.json();
+    myClientID = id;
+    myClientSecret = secret;
+    await authenticate();
+}
