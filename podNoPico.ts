@@ -18,6 +18,7 @@ import {
     createContainerAt,
     deleteContainer,
     deleteFile,
+    universalAccess,
 } from '@inrupt/solid-client';
 import {
     createDpopHeader, 
@@ -115,6 +116,34 @@ async function uploadFile(fileURL : string){
 async function removeFile() {
     await deleteFile( `${url}myFile.txt`, { fetch: authFetch });
     console.log('File deleted successfully!\n');
+}
+
+async function grantAccess(resourceUrl: string) {
+    universalAccess.setPublicAccess(
+        resourceUrl,  // Resource
+        { read: true, write: false },    // Access object
+        { fetch: authFetch }                 // fetch function from authenticated session
+      ).then((newAccess) => {
+        if (newAccess === null) {
+          console.log("Could not load access details for this Resource.");
+        } else {
+          console.log("Returned Public Access:: ", JSON.stringify(newAccess));
+        }
+      });
+}
+
+async function removeAccess(resourceUrl: string) {
+    universalAccess.setPublicAccess(
+        resourceUrl,  // Resource
+        { read: false, write: false },    // Access object
+        { fetch: authFetch }                 // fetch function from authenticated session
+      ).then((newAccess) => {
+        if (newAccess === null) {
+          console.log("Could not load access details for this Resource.");
+        } else {
+          console.log("Returned Public Access:: ", JSON.stringify(newAccess));
+        }
+      });
 }
 
 async function authenticate() {
