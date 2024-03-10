@@ -24,15 +24,12 @@ import {
     generateDpopKeyPair,
     buildAuthenticatedFetch,
 } from '@inrupt/solid-client-authn-core';
-import axios from 'axios';
 
 let url : string = 'http://localhost:3000/test/';
 let webID : string = 'http://localhost:3000/test/profile/card#me';
 let myClientID : string = 'testToke_1f5e0802-b16e-44d3-a0e5-78aecbfbbbda';
 let myClientSecret : string = '6cff217d1c31af7a991e6356608af95f89b10c468da51f498314e4107e38ef3f86cca85260ccaed91c9f0e7936b6b47c9281ee45451d86332248b728db8041cc';
 let authFetch;
-const LIMIT = 500;
-const fs = require("fs");
 
 function setUrl(newUrl : string) {
     url = newUrl;
@@ -62,12 +59,12 @@ async function ls() {
 }
 
 async function createFolder(){
-    await createContainerAt(`${url}folder/`);
+    await createContainerAt(`${url}folder/`, { fetch: authFetch});
     console.log('Container created successfully!\n');
 }
 
 async function removeFolder() {
-    await deleteContainer(`${url}folder/`);
+    await deleteContainer(`${url}folder/`, { fetch: authFetch});
     console.log('Container deleted successfully!\n');
 }
 
@@ -99,29 +96,7 @@ async function createFileObject(fileURL : string) : Promise<File> {
     return file;
 }
 
-async function getFileSize(url: string): Promise<number> {
-    try {
-        if (url.startsWith('http://') || url.startsWith('https://')) {
-            const response = await axios.head(url);
-            const contentLength = response.headers['content-length'];
-    
-            return contentLength ? parseInt(contentLength, 10) : -1;
-        } else {
-            const stats = fs.statSync(url);
-            return stats.size;
-        }
-    } catch (error) {
-        console.error('An error occurred:', error);
-        return -1;
-    }
-}
-
 async function uploadFile(fileURL : string){
-    const size = getFileSize(fileURL);
-    if (await size / (1024*1024) > LIMIT) {
-        throw "The file size exceed 500 MB";
-    }
-	
     let file : File = await createFileObject(fileURL);
 
     overwriteFile(
