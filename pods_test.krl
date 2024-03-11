@@ -30,9 +30,37 @@ ruleset pods_test {
 		select when test overwrite_file
 		pods:overwrite(event:attrs.get("fileURL"))
 	}
+	rule test_remove_file {
+		select when test remove_file
+		pods:removeFile(event:attrs.get("fileURL"))
+	}
+	
+	rule test_fetch_file {
+		select when test fetch_file
+		pods:fetch(event:attrs.get("fileURL"))
+	}
+	
+	rule test_create_folder {
+		select when test create_folder
+		pods:createFolder(event:attrs.get("containerURL"))
+	}
+	rule test_remove_folder {
+		select when test create_folder
+		pods:removeFolder(event:attrs.get("containerURL"))
+	}
+	
+	rule test_grant_access {
+		select when test grant_access
+		pods:grantAccess(event:attrs.get("resourceURL"))
+	}
+	rule test_remove_access {
+		select when test remove_access
+		pods:removeAccess(event:attrs.get("resourceURL"))
+	}
+	
 
 	rule test_ls {
 		select when test ls
-		pods:ls(event:attrs.get("directoryURL"))
+		pods:listItems(event:attrs.get("directoryURL"))
 	}
 }
