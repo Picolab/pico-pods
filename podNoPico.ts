@@ -9,6 +9,8 @@ import {
     createAcl,
     createAclFromFallbackAcl,
     getResourceAcl,
+    getSolidDataset,
+    getContainedResourceUrlAll,
     setAgentResourceAccess,
     saveAclFor,
     getFile,
@@ -37,26 +39,30 @@ function setUrl(newUrl : string) {
 }
 
 async function ls() {
-    let data = await fetch(url)
-        .then(function(response) {
-            return response.text();
-        })
-        .then(function(data) {
-            return data;
-        });
+    let newURL = url; // will change to append directory url
 
-    data = data.substring(data.indexOf("contains"));
-    data = data.substring(9, data.indexOf("\n"));
-    let directory = data.split(", ");
-
-    for (let i = 0; i < directory.length; i++) {
-        const element = directory[i];
-        let newEl = element.substring(1, element.indexOf(">"));
-        directory[i] = newEl;
+    if (!newURL.endsWith('/')) {
+    throw ": listItems can only be called on containers. Ensure that containers have their trailing slash."
     }
-    console.log(directory);
-    console.log();
-    return directory;
+    
+    let dataset;
+    
+    try {
+        dataset = await getSolidDataset(newURL, { fetch: fetch });
+        let containedResources = getContainedResourceUrlAll(dataset)
+        
+        let directory : string[] = [];
+        for (let i = 0; i < containedResources.length; i++) {
+            let resource = containedResources[i]
+            let item = resource.substring(newURL.length, resource.length);
+            directory.push(item);
+        }
+    
+        console.log(directory);
+        return directory;
+    } catch (e) {
+        console.log((e as Error).message);
+    }
 }
 
 async function createFolder(){
