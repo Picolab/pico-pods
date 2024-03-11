@@ -284,6 +284,33 @@ const removeFolder = krl.Action(["containerURL"], async function(containerURL : 
     this.log.debug('Container deleted successfully!\n');
 });
 
+const grantAccess = krl.Action(["resourceURL"], async function(resourceUrl: string) {
+    universalAccess.setPublicAccess(
+        resourceUrl,  // Resource
+        { read: true, write: false },    // Access object
+        { fetch: authFetch }                 // fetch function from authenticated session
+      ).then((newAccess) => {
+        if (newAccess === null) {
+          this.log.debug("Could not load access details for this Resource.");
+        } else {
+          this.log.debug("Returned Public Access:: ", JSON.stringify(newAccess));
+        }
+      });
+});
+const removeAccess = krl.Action(["resourceURL"], async function removeAccess(resourceUrl: string) {
+    universalAccess.setPublicAccess(
+        resourceUrl,  // Resource
+        { read: false, write: false },    // Access object
+        { fetch: authFetch }                 // fetch function from authenticated session
+      ).then((newAccess) => {
+        if (newAccess === null) {
+          console.log("Could not load access details for this Resource.");
+        } else {
+          console.log("Returned Public Access:: ", JSON.stringify(newAccess));
+        }
+      });
+});
+
 
 
 
@@ -306,9 +333,11 @@ const pods: krl.Module = {
 	setClientID: setClientID,
 	setClientSecret: setClientSecret,
 	setWebID: setWebID,
-	setTokenURL : setTokenURL,
+	setTokenURL: setTokenURL,
 
-	authenticate : authenticate,
+	authenticate: authenticate,
+	grantAccess: grantAccess,
+	removeAccess: removeAccess,
 }
 
 export default pods;
