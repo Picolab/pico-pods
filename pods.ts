@@ -1,7 +1,6 @@
 import { krl, KrlCtx } from "krl-stdlib";
 import {
-	overwriteFile,
-	saveFileInContainer,
+    overwriteFile,
     getSolidDatasetWithAcl,
     getAgentAccess,
     getAgentAccessAll,
@@ -11,6 +10,8 @@ import {
     createAcl,
     createAclFromFallbackAcl,
     getResourceAcl,
+    getSolidDataset,
+    getContainedResourceUrlAll,
     setAgentResourceAccess,
     saveAclFor,
     getFile,
@@ -20,7 +21,9 @@ import {
     createContainerAt,
     deleteContainer,
     deleteFile,
-} from "@inrupt/solid-client";
+    universalAccess,
+	saveFileInContainer,
+} from '@inrupt/solid-client';
 import {
     createDpopHeader, 
     generateDpopKeyPair,
@@ -229,6 +232,54 @@ const overwrite = krl.Action(["fileURL"], async function(fileURL : string) {
     });
 });
 
+const pods_fetch = krl.Action(["fileURL"], async function(fileURL : string) {
+    getFile(
+        fileURL,
+        { fetch: authFetch }
+    )
+    .then((file) => {
+        this.log.debug(`Fetched a ${getContentType(file)} file from ${getSourceUrl(file)}.`);
+        this.log.debug(`The file is ${isRawData(file) ? "not " : ""}a dataset.`);
+        this.log.debug(file + '\n');
+    })
+});
+
+const listItems = krl.Function(["fileURL"], async function(fileURL : string) {
+    let newURL = fileURL; // will change to append directory url
+
+    if (!newURL.endsWith('/')) {
+    throw ": listItems can only be called on containers. Ensure that containers have their trailing slash."
+    }
+    
+    let dataset;
+    
+    try {
+        dataset = await getSolidDataset(newURL, { fetch: fetch });
+        let containedResources = getContainedResourceUrlAll(dataset)
+        
+        let directory : string[] = [];
+        for (let i = 0; i < containedResources.length; i++) {
+            let resource = containedResources[i]
+            let item = resource.substring(newURL.length, resource.length);
+            directory.push(item);
+        }
+    
+        this.log.debug(directory);
+        return directory;
+    } catch (e) {
+        this.log.error((e as Error).message);
+    }
+});
+
+const createFolder = krl.Action(["containerURL"], async function(containerURL : string) {
+    await createContainerAt(containerURL, { fetch: authFetch});
+    this.log.debug('Container created successfully!\n');
+});
+const removeFolder = krl.Action(["containerURL"], async function(containerURL : string) {
+    await deleteContainer(containerURL, { fetch: authFetch});
+    this.log.debug('Container deleted successfully!\n');
+});
+
 
 
 
@@ -238,6 +289,10 @@ const pods: krl.Module = {
 	disconnect_pod: disconnect_storage,
 	store: store,
 	overwrite: overwrite,
+	fetch: pods_fetch,
+	listItems: listItems,
+	createFolder: createFolder,
+	removeFolder: removeFolder,
 
 	// getStorage : getStorage, //Private KRL helper function, does not need to be exported
 	// setStorage : setStorage, //Private KRL helper function, does not need to be exported
