@@ -5,7 +5,7 @@ ruleset pods_test {
 	
 	rule test_connect_pod {
 		select when test connect_storage
-		pods:connect_storage(event:attrs.get("storageURL"),
+		pods:connectStorage(event:attrs.get("storageURL"),
 						event:attrs.get("webID"),
 						event:attrs.get("clientID"),
 						event:attrs.get("clientSecret"),
@@ -14,7 +14,7 @@ ruleset pods_test {
 	
 	rule test_disconnect_storage {
 		select when test disconnect_storage
-		pods:disconnect_storage()
+		pods:disconnectStorage()
 	}
 	
 	rule test_authenticate_storage {

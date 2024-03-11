@@ -231,6 +231,10 @@ const overwrite = krl.Action(["fileURL"], async function(fileURL : string) {
         this.log.error("Error uploading file:", error);
     });
 });
+const removeFile = krl.Action(["fileURL"], async function(fileURL : string) {
+    await deleteFile(fileURL, { fetch: authFetch });
+    this.log.debug('File deleted successfully!\n');
+});
 
 const pods_fetch = krl.Action(["fileURL"], async function(fileURL : string) {
     getFile(
@@ -285,10 +289,11 @@ const removeFolder = krl.Action(["containerURL"], async function(containerURL : 
 
 
 const pods: krl.Module = {
-	connect_pod: connect_storage,
-	disconnect_pod: disconnect_storage,
+	connectStorage: connect_storage,
+	disconnectStorage: disconnect_storage,
 	store: store,
 	overwrite: overwrite,
+	removeFile: removeFile,
 	fetch: pods_fetch,
 	listItems: listItems,
 	createFolder: createFolder,
