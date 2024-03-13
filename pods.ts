@@ -265,7 +265,7 @@ const copyFile = krl.Action(["fileURL", "targetURL"],
     .catch(error => {
         this.log.error("Error fetching file:", error);
     })
-}
+});
 
 const pods_fetch = krl.Action(["fileURL"], async function(fileURL : string) {
     getFile(
