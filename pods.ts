@@ -236,6 +236,37 @@ const removeFile = krl.Action(["fileURL"], async function(fileURL : string) {
     this.log.debug('File deleted successfully!\n');
 });
 
+const copyFile = krl.Action(["fileURL", "targetURL"], 
+							 async function(fileURL : string, targetURL : string) {
+    // Get the file in Pod
+    getFile(
+        fileURL,               
+        { fetch: authFetch }       
+    )
+    .then((file) => {
+        this.log.debug( `Fetched a ${getContentType(file)} file from ${getSourceUrl(file)}.`);
+        this.log.debug(`The file is ${isRawData(file) ? "not " : ""}a dataset.`);
+
+        // get the file name
+        let filename : string | undefined = fileURL.split('/').pop()
+
+        overwriteFile(
+            targetURL + filename,
+            file,
+            { fetch: authFetch }
+        )
+        .then(() => {
+            this.log.debug(`File copied to ${targetURL} successfully!\n`);
+        })
+        .catch(error => {
+            this.log.error("Error copying file:", error);
+        });
+    })
+    .catch(error => {
+        this.log.error("Error fetching file:", error);
+    })
+}
+
 const pods_fetch = krl.Action(["fileURL"], async function(fileURL : string) {
     getFile(
         fileURL,
@@ -323,6 +354,7 @@ const pods: krl.Module = {
 	store: store,
 	overwrite: overwrite,
 	removeFile: removeFile,
+	copyFile: copyFile,
 	fetch: pods_fetch,
 	listItems: listItems,
 	createFolder: createFolder,

@@ -34,6 +34,12 @@ ruleset pods_test {
 		select when test remove_file
 		pods:removeFile(event:attrs.get("fileURL"))
 	}
+
+	rule test_copy_file {
+		select when test copy_file
+		pods:copyFile(event:attrs.get("fileURL"),
+					event:attrs.get("targetURL"))
+	}
 	
 	rule test_fetch_file {
 		select when test fetch_file
