@@ -69,4 +69,9 @@ ruleset pods_test {
 		select when test ls
 		pods:listItems(event:attrs.get("directoryURL"))
 	}
+
+	rule test_find {
+		select when test find 
+		pods:findFile(event:attrs.get("fileName"))
+	}
 }
