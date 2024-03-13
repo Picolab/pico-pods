@@ -268,7 +268,9 @@ const listItems = krl.Function(["fileURL"], async function(fileURL : string) {
             directory.push(item);
         }
     
-        this.log.debug(directory);
+		for (let i = 0; i < directory.length; i++) {
+			this.log.debug(directory[i]);
+		}
         return directory;
     } catch (e) {
         this.log.error((e as Error).message);
