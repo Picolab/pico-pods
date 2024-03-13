@@ -308,6 +308,45 @@ const listItems = krl.Function(["fileURL"], async function(fileURL : string) {
     }
 });
 
+const findFile = krl.Function(["fileName"], async function (fileName : string) {
+    // first item: get the root directory
+    let directory = await listItems("/");
+    let queue : string[][] = [];
+    queue.push(directory);
+    let urls : string[] = []
+    urls.push("/");
+
+    // using a breadth-first search, only on directories
+    // each directory, when listed, returns an array (or undefined)
+    while (queue.length > 0) {
+        let dir = queue.shift();
+        let url = urls.shift();
+
+      // check if directory has the file
+      if (dir?.includes(fileName)) {
+          console.log(url);
+          return url;
+      }
+
+      console.log("made it here");
+      // go through each subdirectory and enqueue all of them
+      if (dir != undefined) {
+          for (let i = 0; i < dir?.length; i++) {
+                let subdir = dir[i];
+                if (subdir.endsWith('/')) {
+                    let nextItem = await listItems(url + subdir);
+                    queue.push(nextItem);
+                    urls.push(url + subdir)
+                }
+            }
+        }
+    }
+
+    // not found
+    console.log("null");
+    return null;
+});
+
 const createFolder = krl.Action(["containerURL"], async function(containerURL : string) {
     await createContainerAt(containerURL, { fetch: authFetch});
     this.log.debug('Container created successfully!\n');
@@ -357,6 +396,7 @@ const pods: krl.Module = {
 	copyFile: copyFile,
 	fetch: pods_fetch,
 	listItems: listItems,
+  findFile: findFile,
 	createFolder: createFolder,
 	removeFolder: removeFolder,
 
