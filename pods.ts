@@ -283,7 +283,7 @@ const listItems = krl.Function(["fileURL"], async function(fileURL : string) {
     let newURL = fileURL; // will change to append directory url
 
     if (!newURL.endsWith('/')) {
-    throw ": listItems can only be called on containers. Ensure that containers have their trailing slash."
+    	throw MODULE_NAME + ": listItems can only be called on containers. Ensure that containers have their trailing slash."
     }
     
     let dataset;
