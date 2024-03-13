@@ -280,7 +280,8 @@ const pods_fetch = krl.Action(["fileURL"], async function(fileURL : string) {
 });
 
 const listItems = krl.Function(["fileURL"], async function(fileURL : string) {
-    let newURL = fileURL; // will change to append directory url
+    let baseURL = getStorage();
+    let newURL = baseURL + fileURL;
 
     if (!newURL.endsWith('/')) {
     	throw MODULE_NAME + ": listItems can only be called on containers. Ensure that containers have their trailing slash."
@@ -310,11 +311,11 @@ const listItems = krl.Function(["fileURL"], async function(fileURL : string) {
 
 const findFile = krl.Function(["fileName"], async function (fileName : string) {
     // first item: get the root directory
-    let directory = await listItems("/");
+    let directory = await listItems("");
     let queue : string[][] = [];
     queue.push(directory);
     let urls : string[] = []
-    urls.push("/");
+    urls.push("");
 
     // using a breadth-first search, only on directories
     // each directory, when listed, returns an array (or undefined)
