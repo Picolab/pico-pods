@@ -41,34 +41,59 @@ const CLIENT_SECRET_ENT_NAME : string = "__pods_clientSecret";
 const TOKEN_URL_ENT_NAME : string = "__pods_tokenURL";
 let authFetch : (typeof fetch);
 
+/**
+ * Standardizes URLs by checking for slashes at the start and end of URLs, 
+ * adding slashes to the end if not present and removing slashes at the start if present.
+ * @param inputURL The URL to standardize.
+ * @returns a standardized URL.
+ */
+function standardizeURL(inputURL : string | undefined) : string {
+	inputURL = <string>inputURL;
+	let outputURL : string = inputURL;
+
+	if (inputURL.startsWith("/") || inputURL.startsWith("\\")) {
+		//Slices off the first letter of the string
+		outputURL = outputURL.slice(1);
+	};
+	if (!(inputURL.endsWith("/") || inputURL.endsWith("\\"))) {
+		outputURL = outputURL + "/";
+	}
+
+	return outputURL;
+};
 const getStorage = krl.Function([], async function() : Promise<string | undefined> {
 	return this.rsCtx.getEnt(STORAGE_ENT_NAME);
 });
 const setStorage = krl.Action(["new_URL"], async function(new_URL : string | undefined) {
+	new_URL = standardizeURL(new_URL);
 	this.rsCtx.putEnt(STORAGE_ENT_NAME, new_URL);
 });
 const getClientID = krl.Function([], async function() : Promise<string | undefined> {
 	return this.rsCtx.getEnt(CLIENT_ID_ENT_NAME);
 });
 const setClientID = krl.Action(["new_ID"], async function(new_ID : string | undefined) {
+	new_ID = standardizeURL(new_ID);
 	this.rsCtx.putEnt(CLIENT_ID_ENT_NAME, new_ID);
 });
 const getClientSecret = krl.Function([], async function() : Promise<string | undefined> {
 	return this.rsCtx.getEnt(CLIENT_SECRET_ENT_NAME);
 });
 const setClientSecret = krl.Action(["new_Secret"], async function(new_Secret : string | undefined) {
+	new_Secret = standardizeURL(new_Secret);
 	this.rsCtx.putEnt(CLIENT_SECRET_ENT_NAME, new_Secret);
 });
 const getWebID = krl.Function([], async function() : Promise<string | undefined> {
 	return this.rsCtx.getEnt(WEB_ID_ENT_NAME);
 });
 const setWebID = krl.Action(["new_ID"], async function(new_ID : string | undefined) {
+	new_ID = standardizeURL(new_ID);
 	this.rsCtx.putEnt(WEB_ID_ENT_NAME, new_ID);
 });
 const getTokenURL = krl.Function([], async function() : Promise<string | undefined> {
 	return this.rsCtx.getEnt(TOKEN_URL_ENT_NAME);
 });
 const setTokenURL = krl.Action(["new_URL"], async function(new_URL : string | undefined) {
+	new_URL = standardizeURL(new_URL);
 	this.rsCtx.putEnt(TOKEN_URL_ENT_NAME, new_URL);
 });
 
@@ -177,11 +202,16 @@ const disconnect_storage = krl.Action([], async function() {
 	return "Disconnected successfully.";
 });
 
-const store = krl.Action(["fileURL"], async function(fileURL : string) {
+function checkFileURL(fileURL : string, fileName : string) : string {
+	if (!fileURL.endsWith(fileName)) {
+		fileURL = fileURL + fileName;
+	}
+	return fileURL;
+}
+const store = krl.Action(["fetchFileURL", "storeLocation"], async function(fetchFileURL : string, storeLocation : string) {
 	if (!await isStorageConnected(this, [])) {
 		throw MODULE_NAME + ":store needs a Pod to be connected.";
 	}
-	let storageRelativeLocation : string = "/test/container/";
 	
 	//Used to check file size prior to loading a file into memory
 	//Considered unnecessary
@@ -190,10 +220,11 @@ const store = krl.Action(["fileURL"], async function(fileURL : string) {
         throw "The file size exceed 500 MB";
     }*/
 	
-    let file : File = await createFileObject(fileURL);
+    let file : File = await createFileObject(fetchFileURL);
+	storeLocation = checkFileURL(fetchFileURL, file.name);
 
     saveFileInContainer(
-        await getStorage(this, []) + storageRelativeLocation + file.name,
+        storeLocation,
         file,
         { fetch: authFetch }
     )
@@ -204,23 +235,16 @@ const store = krl.Action(["fileURL"], async function(fileURL : string) {
         this.log.error("Error uploading file:", error);
     });
 });
-const overwrite = krl.Action(["fileURL"], async function(fileURL : string) {
+const overwrite = krl.Action(["fetchFileURL", "storeLocation"], async function(fetchFileURL : string, storeLocation : string) {
 	if (!await isStorageConnected(this, [])) {
 		throw MODULE_NAME + ":store needs a Pod to be connected.";
 	}
-	let storageRelativeLocation : string = "/test/container/";
 	
-	//Used to check file size prior to loading a file into memory
-	//Considered unnecessary
-	/*const size = getFileSize(fileURL);
-    if (await size / (1024*1024) > LIMIT) {
-        throw "The file size exceed 500 MB";
-    }*/
-	
-    let file : File = await createFileObject(fileURL);
+    let file : File = await createFileObject(fetchFileURL);
+	storeLocation = checkFileURL(fetchFileURL, file.name);
 
     overwriteFile(
-        await getStorage(this, []) + storageRelativeLocation + file.name,
+        storeLocation,
         file,
         { fetch: authFetch }
     )
