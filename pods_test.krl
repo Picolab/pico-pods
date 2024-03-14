@@ -54,6 +54,16 @@ ruleset pods_test {
 		select when test remove_folder
 		pods:removeFolder(event:attrs.get("containerURL"))
 	}
+
+	rule test_grant_agent_access {
+		select when test grant_agent_access
+		pods:grantAgentAccess(event:attrs.get("resourceURL"), event:attrs.get("webID"))
+	}
+
+	rule test_remove_agent_access {
+		select when test remove_agent_access
+		pods:removeAgentAccess(event:attrs.get("resourceURL"), event:attrs.get("webID"))
+	}
 	
 	rule test_grant_access {
 		select when test grant_access
