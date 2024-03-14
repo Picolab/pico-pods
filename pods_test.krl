@@ -51,7 +51,7 @@ ruleset pods_test {
 		pods:createFolder(event:attrs.get("containerURL"))
 	}
 	rule test_remove_folder {
-		select when test create_folder
+		select when test remove_folder
 		pods:removeFolder(event:attrs.get("containerURL"))
 	}
 	
