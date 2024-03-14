@@ -384,6 +384,39 @@ const removeFolder = krl.Action(["containerURL"], async function(containerURL : 
     this.log.debug('Container deleted successfully!\n');
 });
 
+const grantAgentAccess = krl.Action(["resourceURL", "webID"], async function(resourceURL : string, webID : string) {
+    universalAccess.setAgentAccess(
+        resourceURL,       // resource  
+        webID,   // agent
+        // sample: {"read":false,"write":false,"append":false,"controlRead":false,"controlWrite":false}
+        { read: true, write: false },
+        { fetch: authFetch }                      // fetch function from authenticated session
+      ).then((agentAccess) => {
+        this.log.debug(`For resource::: ${resourceURL}`);
+        if (agentAccess === null) {
+            this.log.debug(`Could not load ${webID}'s access details.`);
+        } else {
+            this.log.debug(`${webID}'s Access:: ${JSON.stringify(agentAccess)}`);
+        }
+      });
+});
+
+const removeAgentAccess = krl.Action(["resourceURL", "webID"], async function(resourceURL : string, webID : string) {
+    universalAccess.setAgentAccess(
+        resourceURL,       // resource  
+        webID,   // agent
+        { read: false, write: false },
+        { fetch: authFetch }                      // fetch function from authenticated session
+      ).then((agentAccess) => {
+        this.log.debug(`For resource::: ${resourceURL}`);
+        if (agentAccess === null) {
+            this.log.debug(`Could not load ${webID}'s access details.`);
+        } else {
+            this.log.debug(`${webID}'s Access:: ${JSON.stringify(agentAccess)}`);
+        }
+      });
+});
+
 const grantAccess = krl.Action(["resourceURL"], async function(resourceUrl: string) {
     universalAccess.setPublicAccess(
         resourceUrl,  // Resource
@@ -438,6 +471,8 @@ const pods: krl.Module = {
 	setTokenURL: setTokenURL,
 
 	authenticate: authenticate,
+	grantAgentAccess: grantAgentAccess,
+	removeAgentAccess: removeAgentAccess,
 	grantAccess: grantAccess,
 	removeAccess: removeAccess,
 }
