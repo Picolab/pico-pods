@@ -47,7 +47,10 @@ let authFetch : (typeof fetch);
  * @param inputURL The URL to standardize.
  * @returns a standardized URL.
  */
-function standardizeURL(inputURL : string | undefined) : string {
+function standardizeURL(inputURL : string | undefined) : string | undefined {
+    if (typeof inputURL === "undefined") {
+        return inputURL;
+    }
 	inputURL = <string>inputURL;
 	let outputURL : string = inputURL;
 
@@ -72,28 +75,28 @@ const getClientID = krl.Function([], async function() : Promise<string | undefin
 	return this.rsCtx.getEnt(CLIENT_ID_ENT_NAME);
 });
 const setClientID = krl.Action(["new_ID"], async function(new_ID : string | undefined) {
-	new_ID = standardizeURL(new_ID);
+	//new_ID = standardizeURL(new_ID);
 	this.rsCtx.putEnt(CLIENT_ID_ENT_NAME, new_ID);
 });
 const getClientSecret = krl.Function([], async function() : Promise<string | undefined> {
 	return this.rsCtx.getEnt(CLIENT_SECRET_ENT_NAME);
 });
 const setClientSecret = krl.Action(["new_Secret"], async function(new_Secret : string | undefined) {
-	new_Secret = standardizeURL(new_Secret);
+	//new_Secret = standardizeURL(new_Secret);
 	this.rsCtx.putEnt(CLIENT_SECRET_ENT_NAME, new_Secret);
 });
 const getWebID = krl.Function([], async function() : Promise<string | undefined> {
 	return this.rsCtx.getEnt(WEB_ID_ENT_NAME);
 });
 const setWebID = krl.Action(["new_ID"], async function(new_ID : string | undefined) {
-	new_ID = standardizeURL(new_ID);
+	//new_ID = standardizeURL(new_ID);
 	this.rsCtx.putEnt(WEB_ID_ENT_NAME, new_ID);
 });
 const getTokenURL = krl.Function([], async function() : Promise<string | undefined> {
 	return this.rsCtx.getEnt(TOKEN_URL_ENT_NAME);
 });
 const setTokenURL = krl.Action(["new_URL"], async function(new_URL : string | undefined) {
-	new_URL = standardizeURL(new_URL);
+	//new_URL = standardizeURL(new_URL);
 	this.rsCtx.putEnt(TOKEN_URL_ENT_NAME, new_URL);
 });
 
