@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to the dApps!</title>
+    <link rel="stylesheet" href="index_style.css">
+</head>
+<body>
+    <div class="login-container">
+        <h2>Welcome to the dApps!</h2>
+        <form id="loginForm">
+            <div class="input-group">
+                <input type="text" id="podURL" required>
+                <label for="podURL">Pod URL</label>
+            </div>
+            <div class="input-group">
+                <input type="text" id="webID" required>
+                <label for="webID">WebID</label>
+            </div>
+            <div class="input-group">
+                <input type="text" id="clientID" required>
+                <label for="clientID">Client ID</label>
+            </div>
+            <div class="input-group">
+                <input type="password" id="clientSecret" required>
+                <label for="clientSecret">Client Secret</label>
+            </div>
+            <div class="input-group">
+                <input type="text" id="tokenURL" required>
+                <label for="tokenURL">Token URL</label>
+            </div>
+            <button id="attachButton" type="submit">attach</button>
+        </form>
+    </div>
+<script src="index_script.js"></script> 
+</body>
+</html>
