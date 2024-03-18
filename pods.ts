@@ -31,6 +31,8 @@ import {
 } from '@inrupt/solid-client-authn-core';
 import * as fs from "fs";
 
+let path = require('path');
+
 
 const STORAGE_ENT_NAME : string = "__pods_storageURL";
 const MODULE_NAME : string = "pods";
@@ -109,22 +111,20 @@ const isStorageConnected = krl.Function([], async function() : Promise<boolean> 
 });
 
 async function createFileObject(fileURL : string) : Promise<File> {
-    let response;
+	let data : Blob;
+	let data_type : string | null | undefined;
 	if (fileURL.startsWith("file://")) {
 		fileURL = fileURL.slice(8);
-		fs.readFile(fileURL, function(err : NodeJS.ErrnoException | null, data : Buffer) {
-			if (err) {
-				throw err;
-			};
-			response = data;
-		});
+		let response = fs.readFileSync(fileURL);
+		data_type = fileURL.split('.').pop();
+		data = new Blob([response]);
 	} else {
-    	response = await fetch(fileURL);
+    	let response = await fetch(fileURL);
+		//Get file data type
+		data_type = await response.headers.get('content-type');
+		data = await response.blob();
 	}
-    let data = await response.blob()
     
-	//Get file data type
-    let data_type : string | null = await response.headers.get('content-type');
     let metadata = {
       type: <string | undefined>data_type,
     };
@@ -305,7 +305,7 @@ const copyFile = krl.Action(["fileURL", "targetURL"],
     })
 });
 
-const pods_fetch = krl.Action(["fileURL"], async function(fileURL : string) {
+const pods_fetch = krl.Function(["fileURL"], async function(fileURL : string) {
     getFile(
         fileURL,
         { fetch: authFetch }
@@ -328,7 +328,7 @@ const listItems = krl.Function(["fileURL"], async function(fileURL : string) {
     let dataset;
     
     try {
-        dataset = await getSolidDataset(newURL, { fetch: fetch });
+        dataset = await getSolidDataset(newURL, { fetch: authFetch });
         let containedResources = getContainedResourceUrlAll(dataset)
         
         let directory : string[] = [];
