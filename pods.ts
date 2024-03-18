@@ -29,7 +29,7 @@ import {
     generateDpopKeyPair,
     buildAuthenticatedFetch,
 } from '@inrupt/solid-client-authn-core';
-
+import * as fs from "fs";
 
 
 const STORAGE_ENT_NAME : string = "__pods_storageURL";
@@ -112,7 +112,7 @@ async function createFileObject(fileURL : string) : Promise<File> {
     let response;
 	if (fileURL.startsWith("file://")) {
 		fileURL = fileURL.slice(8);
-		fs.readFile(fileURL, function(err, data) {
+		fs.readFile(fileURL, function(err : NodeJS.ErrnoException | null, data : Buffer) {
 			if (err) {
 				throw err;
 			};
@@ -318,7 +318,7 @@ const pods_fetch = krl.Action(["fileURL"], async function(fileURL : string) {
 });
 
 const listItems = krl.Function(["fileURL"], async function(fileURL : string) {
-    let baseURL = getStorage();
+    let baseURL = getStorage(this, []);
     let newURL = baseURL + fileURL;
 
     if (!newURL.endsWith('/')) {
@@ -349,7 +349,7 @@ const listItems = krl.Function(["fileURL"], async function(fileURL : string) {
 
 const findFile = krl.Function(["fileName"], async function (fileName : string) {
     // first item: get the root directory
-    let directory = await listItems("");
+    let directory = await listItems(this, [""]);
     let queue : string[][] = [];
     queue.push(directory);
     let urls : string[] = []
@@ -373,7 +373,7 @@ const findFile = krl.Function(["fileName"], async function (fileName : string) {
           for (let i = 0; i < dir?.length; i++) {
                 let subdir = dir[i];
                 if (subdir.endsWith('/')) {
-                    let nextItem = await listItems(url + subdir);
+                    let nextItem = await listItems(this, [url + subdir]);
                     queue.push(nextItem);
                     urls.push(url + subdir)
                 }
