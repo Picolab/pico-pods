@@ -6,9 +6,3 @@ async function attach(event) {
     console.log("Pico ECI: ", ECI);
     window.location.href = 'pod.html';
 }
-
-async function exit(event) {
-    event.preventDefault();
-    ECI = '';
-    window.location.href = 'index.html';
-}
