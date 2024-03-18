@@ -109,7 +109,18 @@ const isStorageConnected = krl.Function([], async function() : Promise<boolean> 
 });
 
 async function createFileObject(fileURL : string) : Promise<File> {
-    let response = await fetch(fileURL);
+    let response;
+	if (fileURL.startsWith("file://")) {
+		fileURL = fileURL.slice(8);
+		fs.readFile(fileURL, function(err, data) {
+			if (err) {
+				throw err;
+			};
+			response = data;
+		});
+	} else {
+    	response = await fetch(fileURL);
+	}
     let data = await response.blob()
     
 	//Get file data type
