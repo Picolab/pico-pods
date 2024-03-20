@@ -30,7 +30,6 @@ async function allPhotos() {
     const allPhotosButton = document.getElementById('listAllPhotos');
     allPhotosButton.classList.add('active');
     sharedPhotosButton.classList.remove('active');
-
 }
 
 async function sharedPhotos() {
@@ -38,4 +37,9 @@ async function sharedPhotos() {
     const allPhotosButton = document.getElementById('listAllPhotos');
     sharedPhotosButton.classList.add('active');
     allPhotosButton.classList.remove('active');
+}
+
+async function toggleFolder(folderHeader) {
+    const folderContent = folderHeader.nextElementSibling;
+    folderContent.classList.toggle('show');
 }
