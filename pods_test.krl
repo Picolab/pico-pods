@@ -6,7 +6,6 @@ ruleset pods_test {
 	rule test_connect_pod {
 		select when test connect_storage
 		pods:connectStorage(event:attrs.get("storageURL"),
-						event:attrs.get("webID"),
 						event:attrs.get("clientID"),
 						event:attrs.get("clientSecret"),
 						event:attrs.get("tokenURL"))
@@ -28,7 +27,7 @@ ruleset pods_test {
 	}
 	rule test_overwrite_file {
 		select when test overwrite_file
-		pods:overwrite(event:attrs.get("fileFileLocation"), event:attrs.get("storeLocation"))
+		pods:overwrite(event:attrs.get("fetchFileLocation"), event:attrs.get("storeLocation"))
 	}
 	rule test_remove_file {
 		select when test remove_file
