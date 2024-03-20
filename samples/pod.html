@@ -11,28 +11,53 @@
     <p>Welcome to your pico!</p>
     <button id="detachPod" class="detach-button" onclick="toggleDetachAttachButtons()">Detach pod</button>
     <button id="attachPod" class="attach-button" onclick="toggleDetachAttachButtons()">Attach pod</button>
-    <div>
+    <div class="navbar">
         <input type="text" id="searchInput" class="search-input" placeholder="Search...">
         <button id="searchPhoto">Search photo</button>
         <button id="listAllPhotos" class="toggle-button active" onclick="allPhotos()">All Photos</button>
         <button id="listAllSharedPhotos" class="toggle-button" onclick="sharedPhotos()">Shared Photos</button>
     </div>
-    <img src="sample.jpg" alt="sample">
-    <div >
-        <button id="addPhoto">Add photo</button>
-        <button id="addFolder">Add folder</button>
+    <div class="folders-container">
+        <p>Root</p>
+        <div class="control-panel">
+            <button id="addPhoto">Add photo</button>
+            <button id="addFolder">Add folder</button>
+        </div>
+        <div class="folder">
+            <div class="folder-header" onclick="toggleFolder(this)">Folder 1</div>
+            <div class="folder-content">
+                <img src="https://via.placeholder.com/150" alt="Folder 1">
+                <img src="https://via.placeholder.com/200" alt="Folder 1">
+                <img src="https://via.placeholder.com/150" alt="Folder 1">
+                <img src="https://via.placeholder.com/200" alt="Folder 1">
+                <img src="https://via.placeholder.com/150" alt="Folder 1">
+                <img src="https://via.placeholder.com/200" alt="Folder 1">
+                <img src="https://via.placeholder.com/150" alt="Folder 1">
+                <img src="https://via.placeholder.com/200" alt="Folder 1">
+                <img src="sample.jpg" alt="Root">
+            </div>
+        </div>
+        <div class="folder">
+            <div class="folder-header" onclick="toggleFolder(this)">Folder 2</div>
+            <div class="folder-content">
+                <img src="https://via.placeholder.com/250" alt="Folder 2">
+                <img src="https://via.placeholder.com/300" alt="Folder 2">
+            </div>
+        </div>
+        <div class="folder">
+            <div class="folder-header" onclick="toggleFolder(this)">Folder 3</div>
+            <div class="folder-content">
+                <img src="https://via.placeholder.com/350" alt="Folder 3">
+            </div>
+        </div>
     </div>
     <div id="myModal" class="modal">
         <div class="modal-content">
-            <h2>Welcome to the dApps!</h2>
+            <h2>Connect Pod</h2>
         <form id="loginForm">
             <div class="input-group">
                 <input type="text" id="podURL" required>
                 <label for="podURL">Pod URL</label>
-            </div>
-            <div class="input-group">
-                <input type="text" id="webID" required>
-                <label for="webID">WebID</label>
             </div>
             <div class="input-group">
                 <input type="text" id="clientID" required>
