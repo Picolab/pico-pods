@@ -31,8 +31,6 @@ import {
 } from '@inrupt/solid-client-authn-core';
 import * as fs from "fs";
 
-let path = require('path');
-
 
 const STORAGE_ENT_NAME : string = "__pods_storageURL";
 const MODULE_NAME : string = "pods";
