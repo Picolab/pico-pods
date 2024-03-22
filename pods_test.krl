@@ -36,8 +36,8 @@ ruleset pods_test {
 
 	rule test_copy_file {
 		select when test copy_file
-		pods:copyFile(event:attrs.get("fileURL"),
-					event:attrs.get("targetURL"))
+		pods:copyFile(event:attrs.get("fetchFileURL"),
+					event:attrs.get("storeLocation"))
 	}
 	
 	rule test_fetch_file {
