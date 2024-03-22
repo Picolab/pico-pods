@@ -330,35 +330,50 @@ const removeFile = krl.Action(["fileURL"], async function(fileURL : string) {
     this.log.debug('File deleted successfully!\n');
 });
 
-const copyFile = krl.Action(["fileURL", "targetURL"], 
-							 async function(fileURL : string, targetURL : string) {
-    // Get the file in Pod
-    getFile(
-        fileURL,               
-        { fetch: authFetch }       
-    )
-    .then((file) => {
-        this.log.debug( `Fetched a ${getContentType(file)} file from ${getSourceUrl(file)}.`);
-        this.log.debug(`The file is ${isRawData(file) ? "not " : ""}a dataset.`);
+const copyFile = krl.Action(["fetchFileURL", "storeLocation"], 
+							 async function(fetchFileURL : string, storeLocation : string) {
+  try {
+    const file = await getFile(
+      fetchFileURL,               // File in Pod to Read
+      { fetch: authFetch }       // fetch from authenticated session
+    );
+    console.log( `Fetched a ${getContentType(file)} file from ${getSourceUrl(file)}.`);
+    console.log(`The file is ${isRawData(file) ? "not " : ""}a dataset.`);
 
-        // get the file name
-        let filename : string | undefined = fileURL.split('/').pop()
+    // get the file name
+    let filename : string | undefined = fetchFileURL.split('/').pop()
+    // get the URL
+    let url = storeLocation + filename;
 
-        overwriteFile(
-            targetURL + filename,
-            file,
-            { fetch: authFetch }
-        )
-        .then(() => {
-            this.log.debug(`File copied to ${targetURL} successfully!\n`);
-        })
-        .catch(error => {
-            this.log.error("Error copying file:", error);
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+
+      overwriteFile(
+        url,
+        file,
+        { fetch: authFetch }
+      )
+      .then(() => {
+        console.log(`File copied to ${storeLocation} successfully!\n`);
+      })
+      .catch(error => {
+        console.error("Error copying file:", error);
+      });
+      } else {
+        const arrayBuffer = await file.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+	    
+        // Writing the buffer to a file
+        fs.writeFile(url, buffer, (err : Error | null) => {
+          if (err) {
+            console.error('Failed to save the file:', err);
+          } else {
+            console.log('File saved successfully.');
+          }
         });
-    })
-    .catch(error => {
-        this.log.error("Error fetching file:", error);
-    })
+      }
+  } catch (err) {
+    console.log(err);
+  }
 });
 
 const pods_fetch = krl.Function(["fileURL"], async function(fileURL : string) {
