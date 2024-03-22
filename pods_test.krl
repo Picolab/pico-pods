@@ -23,11 +23,11 @@ ruleset pods_test {
 	
 	rule test_store_file {
 		select when test store_file
-		pods:store(event:attrs.get("fetchFileLocation"), event:attrs.get("storeLocation"))
+		pods:store(event:attrs.get("fetchFileURL"), event:attrs.get("storeLocation"))
 	}
 	rule test_overwrite_file {
 		select when test overwrite_file
-		pods:overwrite(event:attrs.get("fetchFileLocation"), event:attrs.get("storeLocation"))
+		pods:overwrite(event:attrs.get("fetchFileURL"), event:attrs.get("storeLocation"))
 	}
 	rule test_remove_file {
 		select when test remove_file
