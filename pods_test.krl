@@ -42,7 +42,10 @@ ruleset pods_test {
 	
 	rule test_fetch_file {
 		select when test fetch_file
-		pods:fetch(event:attrs.get("fileURL"))
+		pre {
+			dataURL = pods:fetch(event:attrs.get("fileURL"))
+		}
+		send_directive(dataURL)
 	}
 	
 	rule test_create_folder {
@@ -73,10 +76,12 @@ ruleset pods_test {
 		pods:removeAccess(event:attrs.get("resourceURL"))
 	}
 	
-
 	rule test_ls {
 		select when test ls
-		pods:listItems(event:attrs.get("directoryURL"))
+		pre {
+			list = pods:listItems(event:attrs.get("directoryURL"))
+		}
+		send_directive(list)
 	}
 
 	rule test_find {
