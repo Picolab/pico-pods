@@ -151,28 +151,29 @@ async function getBlob(originURL : string) {
     }
     return data;
 }
-async function createFileObject(data : Blob, originURL : string, destinationURL : string) : Promise<File> {
-	let filename : string | undefined;
+async function createFileObject(data : Blob, destinationURL : string, fileName : string | undefined) : Promise<File> {
 
     //Get file name
-    //Forward Slash Filename
-    let fS_filename = destinationURL.split('/').pop();
-    //Backward Slash Filename
-    let bS_filename = destinationURL.split('\\').pop();
-    if (typeof fS_filename === "undefined" && typeof bS_filename === "undefined") {
-        filename = destinationURL;
-    } else if (typeof fS_filename === "undefined") {
-        filename = bS_filename;
-    } else if (typeof bS_filename === "undefined") {
-        filename = fS_filename;
-    } else if (fS_filename.length > bS_filename.length) {
-        filename = bS_filename;
-    } else {
-        filename = fS_filename;
+    if (typeof fileName === "undefined") {
+        //Forward Slash Filename
+        let fS_filename = destinationURL.split('/').pop();
+        //Backward Slash Filename
+        let bS_filename = destinationURL.split('\\').pop();
+        if (typeof fS_filename === "undefined" && typeof bS_filename === "undefined") {
+            fileName = destinationURL;
+        } else if (typeof fS_filename === "undefined") {
+            fileName = bS_filename;
+        } else if (typeof bS_filename === "undefined") {
+            fileName = fS_filename;
+        } else if (fS_filename.length > bS_filename.length) {
+            fileName = bS_filename;
+        } else {
+            fileName = fS_filename;
+        }
     }
     
 
-    let file = new File([data], <string>filename)
+    let file = new File([data], <string>fileName)
     return file;
 }
 
@@ -277,7 +278,7 @@ function checkFileURL(fileURL : string, fileName : string) : string {
 	}
 	return newFileURL;
 }
-const store = krl.Action(["originURL", "destinationURL"], async function(originURL : string, destinationURL : string) {
+const store = krl.Action(["originURL", "destinationURL", "fileName"], async function(originURL : string, destinationURL : string, fileName : string | undefined = undefined) {
 	if (!await isStorageConnected(this, [])) {
 		throw MODULE_NAME + ":store needs a Pod to be connected.";
 	}
@@ -289,7 +290,7 @@ const store = krl.Action(["originURL", "destinationURL"], async function(originU
         throw "The file size exceed 500 MB";
     }*/
 	
-    let file : File = await getNonPodFile(this, [originURL, destinationURL])
+    let file : File = await getNonPodFile(this, [originURL, destinationURL, fileName])
 
     let checkedDestinationURL = checkFileURL(destinationURL, file.name);
 	this.log.debug("Destination: " + checkedDestinationURL);
@@ -306,12 +307,12 @@ const store = krl.Action(["originURL", "destinationURL"], async function(originU
         this.log.error("Error uploading file: ", error.message);
     });
 });
-const overwrite = krl.Action(["originURL", "destinationURL"], async function(originURL : string, destinationURL : string) {
+const overwrite = krl.Action(["originURL", "destinationURL", "fileName"], async function(originURL : string, destinationURL : string, fileName : string | undefined = undefined) {
 	if (!await isStorageConnected(this, [])) {
 		throw MODULE_NAME + ":overwrite needs a Pod to be connected.";
 	}
 	
-    let file = await getNonPodFile(this, [originURL, destinationURL]);
+    let file = await getNonPodFile(this, [originURL, destinationURL, fileName]);
 
     let checkedDestinationURL = checkFileURL(destinationURL, file.name);
 	this.log.debug("Destination: " + checkedDestinationURL);
@@ -328,10 +329,10 @@ const overwrite = krl.Action(["originURL", "destinationURL"], async function(ori
         this.log.error("Error uploading file: ", error.message);
     });
 });
-const getNonPodFile = krl.Action(["originURL", "destinationURL"], async function(originURL : string, destinationURL : string) : Promise<File> {
+const getNonPodFile = krl.Action(["originURL", "destinationURL", "fileName"], async function(originURL : string, destinationURL : string, fileName : string | undefined) : Promise<File> {
     let file : File;
     let blob : Blob = await getBlob(originURL);
-    file = await createFileObject(blob, originURL, destinationURL);
+    file = await createFileObject(blob, destinationURL, fileName);
 
 	return file;
 });
