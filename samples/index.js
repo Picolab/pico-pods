@@ -452,10 +452,10 @@ async function prefetchFileURLs(items) {
 }
 
 async function addFile(url) {
-    const storeLocation = getCurrentPath();
+    const destinationURL = getCurrentPath();
     const queryParams = new URLSearchParams({
-        fetchFileURL: url,
-        storeLocation: storeLocation
+        originURL: url,
+        destinationURL: destinationURL
     }).toString();
     const event = `${getPicoURL}1556/sample_app/overwrite_file?${queryParams}`;
     fetch(event)
@@ -463,7 +463,7 @@ async function addFile(url) {
         if (!response.ok) {
             throw new Error(`Add file failed: ${response.status}`);
         }
-        fetchAndDisplayItems(currentPath, true);
+        fetchAndDisplayItems(getCurrentPath(), true);
     })
 }
 
