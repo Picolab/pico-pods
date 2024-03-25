@@ -1,12 +1,6 @@
 let pod = true;
-const podURL = 'http://localhost:3000/test/';
-const addFolderURL = 'http://localhost:3001/sky/event/cltqlszq00012ycu4dtvt55l9/1556/test/create_folder?containerURL=' + podURL;
-const deleteFolderURL = 'http://localhost:3001/sky/event/cltqlszq00012ycu4dtvt55l9/1556/test/remove_folder?containerURL=' + podURL;
-const listURL = 'http://localhost:3001/sky/event/cltqlszq00012ycu4dtvt55l9/1556/test/ls?directoryURL=';
 const fetchFileURL = 'http://localhost:3001/sky/event/cltqlszq00012ycu4dtvt55l9/1556/test/fetch_file?fileURL=' + podURL;
-const addFileURL = 'http://localhost:3001/sky/event/cltqlszq00012ycu4dtvt55l9/1556/test/overwrite_file'
 
-let currentPath = '';
 let lastURL = [];
 
 document.addEventListener("DOMContentLoaded", function() {
@@ -18,7 +12,7 @@ document.addEventListener("DOMContentLoaded", function() {
     toggleControlPanel(true);
 
     // Set default photo
-    setCurrentFolder('');
+    setCurrentPath('');
 
     // Modal attach button listener
     const attachForm = document.getElementById('loginForm');
@@ -38,7 +32,7 @@ document.addEventListener("DOMContentLoaded", function() {
         };
         let pico = getPicoURL;
         
-        fetch(`${pico}/temp/sample_app/attach_storage`, {
+        fetch(`${pico}/1556/sample_app/attach_storage`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -83,7 +77,7 @@ function toggleDetachAttachButtons() {
         pod = false;
         detachPodButton.style.display = 'none';
         attachPodButton.style.display = 'inline-block';
-        fetch(`${pico}/temp/sample_app/detach_storage`)
+        fetch(`${pico}/1556/sample_app/detach_storage`)
         .then(response => {
             if (!response.ok) {
                 throw new Error(`HTTP error! Status: ${response.status}`);
@@ -126,23 +120,26 @@ function getPicoURL() {
     return localStorage.getItem('PicoURL');
 }
 
-function setCurrentFolder(url) {
-    localStorage.setItem('currentFolder', url);
+function setCurrentPath(url) {
+    if (!url.endsWith('/')) {
+        url += '/';
+    }
+    localStorage.setItem('currentPath', url);
 }
 
-function getCurrentFolder() {
-    return localStorage.getItem('currentFolder');
+function getCurrentPath() {
+    return localStorage.getItem('currentPath');
 }
 
 async function fetchAndDisplayItems(folderPath = '', goBack = false) {
-    const event = listURL + folderPath;
+    const event = `${getPicoURL()}1556/sample_app/ls?directoryURL=${getCurrentPath()}`;
     try {
         const response = await fetch(event);
         if (!response.ok) {
             throw new Error(`List items failed: ${response.status}`);
         }
-        if (!goBack) lastURL.push(currentPath);
-        currentPath = folderPath;
+        if (!goBack) lastURL.push(getCurrentPath());
+        setCurrentPath(folderPath);
         const json = await response.json();
         let items = json.directives[0].name;
 
@@ -171,7 +168,7 @@ async function fetchAndDisplayItems(folderPath = '', goBack = false) {
         }
 
         // Display current path
-        displayCurrentPath(currentPath);        
+        displayCurrentPath(getCurrentPath());        
 
     } catch (error) {
         console.error("Failed to fetch items:", error);
@@ -189,7 +186,7 @@ function createItemHTML(itemName, url) {
         case 'folder':
             src = 'folder.png'; 
             altText = 'Folder';
-            onClickAttribute = `onclick="fetchAndDisplayItems('${currentPath}${itemName}')"`;
+            onClickAttribute = `onclick="fetchAndDisplayItems('${getCurrentPath()}${itemName}')"`;
             break;
         case 'photo':
             src = url; 
@@ -211,9 +208,9 @@ function createItemHTML(itemName, url) {
 function displayFullSizePhoto(url, itemName) {
     const folderDiv = document.querySelector('.folder');
     folderDiv.innerHTML = `<img src="${url}" style="max-width: 100%; max-height: 100%;">`; 
-    lastURL.push(currentPath);
-    currentPath += itemName;
-    displayCurrentPath(currentPath);
+    lastURL.push(getCurrentPath());
+    setCurrentPath(getCurrentPath() + itemName);
+    displayCurrentPath(getCurrentPath());
     toggleControlPanel(false); 
 }
 
@@ -338,8 +335,8 @@ function addFolderAction() {
 }
 
 async function deletFolderAction() {
-    const listEvent = listURL + currentPath;
-    if (currentPath == '') {
+    const listEvent = `${getPicoURL()}1556/sample_app/ls?directoryURL=${getCurrentPath()}`;
+    if (getCurrentPath() == '') {
         alert('You cannot delete the root folder!');
         return;
     }
@@ -353,7 +350,7 @@ async function deletFolderAction() {
         alert('You can only delete a empty folder!');
         return;
     }
-    const deleteEvent = deleteFolderURL + currentPath;
+    const deleteEvent = `${getPicoURL}/1556/test/remove_folder?containerURL=${getCurrentPath}`;
     const deleteResponse = await fetch(deleteEvent);
     if (!deleteResponse.ok) {
         throw new Error(`Delete folder failed: ${response.status}`);
@@ -418,8 +415,8 @@ async function addFolder(folderName) {
     if (!folderName.endsWith('/')) {
         folderName += '/';
     }
-    const newPath = currentPath + folderName;
-    const event = addFolderURL + newPath;
+    const newPath = getCurrentPath() + folderName;
+    const event = `${getPicoURL}/1556/create_folder?containerURL=${newPath}`;
     fetch(event)
     .then(response => {
         if (!response.ok) {
@@ -430,7 +427,7 @@ async function addFolder(folderName) {
 }
 
 async function getFileURL(item) {
-    const event = fetchFileURL + currentPath + item;
+    const event = `${getPicoURL}/1556/test/fetch_file?fileURL=${getCurrentPath + item}`;
     const response = await fetch(event);
     if (!response.ok) {
         throw new Error(`Fetch file failed: ${response.status}`);
@@ -457,12 +454,12 @@ async function prefetchFileURLs(items) {
 }
 
 async function addFile(fetchFileURL) {
-    const storeLocation = podURL + currentPath;
+    const storeLocation = getCurrentPath();
     const queryParams = new URLSearchParams({
         fetchFileURL: fetchFileURL,
         storeLocation: storeLocation
     }).toString();
-    const event = `${addFileURL}?${queryParams}`;
+    const event = `${getPicoURL}1556/sample_app/overwrite_file?${queryParams}`;
     fetch(event)
     .then(response => {
         if (!response.ok) {
@@ -474,7 +471,7 @@ async function addFile(fetchFileURL) {
 
 function displayCurrentPath(path) {
     const currentPathElement = document.getElementById('currentPath');
-    let pathToDisplay = podURL + path;
+    let pathToDisplay = path;
     const formattedPath = pathToDisplay.replace(/^https?:\/\//, ''); // Remove http:// or https://
     currentPathElement.textContent = formattedPath;
 }
