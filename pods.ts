@@ -373,7 +373,6 @@ const copyFile = krl.Action(["fetchFileURL", "storeLocation"],
         const buffer = Buffer.from(arrayBuffer);
 	    
         // Writing the buffer to a file
-	    const fileSystem = require('fs');
         fs.writeFile(url, buffer, (err : Error | null) => {
           if (err) {
             console.error('Failed to save the file:', err);
