@@ -28,12 +28,21 @@ ruleset sample_app {
 	
 	rule store_file {
 		select when sample_app store_file
-		pods:store(pods:getStorage + event:attrs.get("fetchFileURL"), event:attrs.get("storeLocation"))
+		pods:store(event:attrs.get("fetchFileURL"), pods:getStorage + event:attrs.get("storeLocation"))
 	}
-	rule overwrite_file {
-		select when sample_app overwrite_file
-		pods:overwrite(pods:getStorage + event:attrs.get("fetchFileURL"), event:attrs.get("storeLocation"))
+
+	rule test_overwrite_file_with_name {
+		select when test overwrite_file
+		if (event:attrs.get("fileName")) then
+			pods:overwrite(event:attrs.get("originURL"), pods:getStorage + event:attrs.get("destinationURL"), event:attrs.get("fileName"))
 	}
+
+	rule test_overwrite_file_no_name {
+		select when test overwrite_file
+		if (not event:attrs.get("fileName")) then
+			pods:overwrite(event:attrs.get("originURL"), pods:getStorage + event:attrs.get("destinationURL"))
+	}
+
 	rule remove_file {
 		select when sample_app remove_file
 		pods:removeFile(pods:getStorage + event:attrs.get("fileURL"))
@@ -84,7 +93,7 @@ ruleset sample_app {
 	rule ls {
 		select when sample_app ls
 		pre {
-			list = pods:listItems(pods:getStorage + event:attrs.get("directoryURL"))
+			list = pods:listItems(pods:getStorage + event:attrs.get("fileURL"))
 		}
 		send_directive(list)
 	}
