@@ -348,7 +348,7 @@ async function deletFolderAction() {
         alert('You can only delete a empty folder!');
         return;
     }
-    const deleteEvent = `${getPicoURL}/1556/test/remove_folder?containerURL=${getCurrentPath}`;
+    const deleteEvent = `${getPicoURL}/1556/sample_app/remove_folder?containerURL=${getCurrentPath}`;
     const deleteResponse = await fetch(deleteEvent);
     if (!deleteResponse.ok) {
         throw new Error(`Delete folder failed: ${response.status}`);
@@ -425,7 +425,7 @@ async function addFolder(folderName) {
 }
 
 async function getFileURL(item) {
-    const event = `${getPicoURL}/1556/test/fetch_file?fileURL=${getCurrentPath + item}`;
+    const event = `${getPicoURL}/1556/sample_app/fetch_file?fileURL=${getCurrentPath + item}`;
     const response = await fetch(event);
     if (!response.ok) {
         throw new Error(`Fetch file failed: ${response.status}`);
