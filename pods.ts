@@ -385,14 +385,18 @@ const pods_fetch = krl.Function(["fileURL"], async function(fileURL : string) {
     this.log.debug(`Fetched a ${getContentType(file)} file from ${getSourceUrl(file)}.`);
 	this.log.debug(`The file is ${isRawData(file) ? "not " : ""}a dataset.`);
 	this.log.debug(file + '\n');
-	return file;
+	const arrayBuffer = await file.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    const base64String = buffer.toString('base64');
+    const dataUrl = `data:image/jpeg;base64,${base64String}`;
+	return dataUrl;
 });
 
 const listItems = krl.Function(["fileURL"], async function(fileURL : string) {
-    let baseURL = getStorage(this, []);
+    let baseURL = await getStorage(this, []);
     let newURL = baseURL + fileURL;
 
-    if (!newURL.endsWith('/')) {
+    if ((fileURL != '') && (!fileURL.endsWith('/'))) {
     	throw MODULE_NAME + ": listItems can only be called on containers. Ensure that containers have their trailing slash."
     }
     
