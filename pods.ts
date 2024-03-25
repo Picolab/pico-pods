@@ -335,6 +335,7 @@ const getNonPodFile = krl.Action(["originURL", "destinationURL"], async function
 
 	return file;
 });
+
 const removeFile = krl.Action(["fileURL"], async function(fileURL : string) {
     await deleteFile(fileURL, { fetch: authFetch });
     this.log.debug('File deleted successfully!\n');
@@ -556,7 +557,7 @@ const pods: krl.Module = {
 	createFolder: createFolder,
 	removeFolder: removeFolder,
 
-	// getStorage : getStorage, //Private KRL helper function, does not need to be exported
+	getStorage : getStorage, //Private KRL helper function, does not need to be exported but may be helpful to the developer
 	setStorage : setStorage, //Private KRL helper function, does not need to be exported
 	// isPodConnected : isPodConnected, //Private KRL helper function, does not need to be exported
 	//The following are helper functions that are exported for testing
