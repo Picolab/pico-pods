@@ -1,6 +1,4 @@
 let pod = true;
-const fetchFileURL = 'http://localhost:3001/sky/event/cltqlszq00012ycu4dtvt55l9/1556/test/fetch_file?fileURL=' + podURL;
-
 let lastURL = [];
 
 document.addEventListener("DOMContentLoaded", function() {
@@ -270,10 +268,10 @@ function addPhotoAction() {
     input.style.width = '150px';
 
     const submitNewFile = () => {
-        const fetchFileURL = input.value.trim();
-        if (fetchFileURL) {
-            console.log(`Adding file from: ${fetchFileURL}`); 
-            addFile(fetchFileURL).then(() => {
+        const url = input.value.trim();
+        if (url) {
+            console.log(`Adding file from: ${url}`); 
+            addFile(url).then(() => {
                 alert('File added successfully!');
                 input.remove(); // Remove the input field
                 addPhotoBtn.style.display = ''; // Show the button again
@@ -453,10 +451,10 @@ async function prefetchFileURLs(items) {
     return urlMap;
 }
 
-async function addFile(fetchFileURL) {
+async function addFile(url) {
     const storeLocation = getCurrentPath();
     const queryParams = new URLSearchParams({
-        fetchFileURL: fetchFileURL,
+        fetchFileURL: url,
         storeLocation: storeLocation
     }).toString();
     const event = `${getPicoURL}1556/sample_app/overwrite_file?${queryParams}`;
