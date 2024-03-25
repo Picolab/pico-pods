@@ -2,15 +2,15 @@ let pod = true;
 let lastURL = [];
 
 document.addEventListener("DOMContentLoaded", function() {
+
+    // Set default photo
+    setCurrentPath('');
     
     // Show all items in the root storage URL
     fetchAndDisplayItems();
 
     // Show primary control panel
     toggleControlPanel(true);
-
-    // Set default photo
-    setCurrentPath('');
 
     // Modal attach button listener
     const attachForm = document.getElementById('loginForm');
@@ -130,7 +130,7 @@ function getCurrentPath() {
 }
 
 async function fetchAndDisplayItems(folderPath = '', goBack = false) {
-    const event = `${getPicoURL()}1556/sample_app/ls?directoryURL=${getCurrentPath()}`;
+    const event = `${getPicoURL()}1556/sample_app/ls?fileURL=${folderPath}`;
     try {
         const response = await fetch(event);
         if (!response.ok) {
@@ -333,7 +333,7 @@ function addFolderAction() {
 }
 
 async function deletFolderAction() {
-    const listEvent = `${getPicoURL()}1556/sample_app/ls?directoryURL=${getCurrentPath()}`;
+    const listEvent = `${getPicoURL()}1556/sample_app/ls?fileURL=${getCurrentPath()}`;
     if (getCurrentPath() == '') {
         alert('You cannot delete the root folder!');
         return;
