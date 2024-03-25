@@ -140,17 +140,27 @@ const isStorageConnected = krl.Function([], async function() : Promise<boolean> 
 	return true;
 });
 
-async function createFileObject(fileURL : string) : Promise<File> {
-	let data : Blob;
+async function getBlob(originURL : string) {
+    let data : Blob;
+    if (originURL.startsWith("file://")) {
+		let response = fs.readFileSync(new URL(originURL));
+		data = new Blob([response]);
+	} else {
+    	let response = await fetch(originURL);
+		data = await response.blob();
+    }
+    return data;
+}
+async function createFileObject(data : Blob, originURL : string, destinationURL : string) : Promise<File> {
 	let filename : string | undefined;
 
     //Get file name
     //Forward Slash Filename
-    let fS_filename = fileURL.split('/').pop();
+    let fS_filename = destinationURL.split('/').pop();
     //Backward Slash Filename
-    let bS_filename = fileURL.split('\\').pop();
+    let bS_filename = destinationURL.split('\\').pop();
     if (typeof fS_filename === "undefined" && typeof bS_filename === "undefined") {
-        filename = fileURL;
+        filename = destinationURL;
     } else if (typeof fS_filename === "undefined") {
         filename = bS_filename;
     } else if (typeof bS_filename === "undefined") {
@@ -159,15 +169,6 @@ async function createFileObject(fileURL : string) : Promise<File> {
         filename = bS_filename;
     } else {
         filename = fS_filename;
-    }
-	
-    
-    if (fileURL.startsWith("file://")) {
-		let response = fs.readFileSync(new URL(fileURL));
-		data = new Blob([response]);
-	} else {
-    	let response = await fetch(fileURL);
-		data = await response.blob();
     }
     
 
@@ -276,7 +277,7 @@ function checkFileURL(fileURL : string, fileName : string) : string {
 	}
 	return newFileURL;
 }
-const store = krl.Action(["fetchFileURL", "storeLocation"], async function(fetchFileURL : string, storeLocation : string) {
+const store = krl.Action(["originURL", "destinationURL"], async function(originURL : string, destinationURL : string) {
 	if (!await isStorageConnected(this, [])) {
 		throw MODULE_NAME + ":store needs a Pod to be connected.";
 	}
@@ -288,12 +289,13 @@ const store = krl.Action(["fetchFileURL", "storeLocation"], async function(fetch
         throw "The file size exceed 500 MB";
     }*/
 	
-    let file : File = await createFileObject(fetchFileURL);
-	//storeLocation = checkFileURL(storeLocation, file.name);
-	this.log.debug("Store Location: " + storeLocation);
+    let file : File = await getNonPodFile(this, [originURL, destinationURL])
+
+    let checkedDestinationURL = checkFileURL(destinationURL, file.name);
+	this.log.debug("Destination: " + checkedDestinationURL);
 
     saveFileInContainer(
-        storeLocation,
+        checkedDestinationURL,
         file,
         { fetch: authFetch }
     )
@@ -304,17 +306,18 @@ const store = krl.Action(["fetchFileURL", "storeLocation"], async function(fetch
         this.log.error("Error uploading file: ", error.message);
     });
 });
-const overwrite = krl.Action(["fetchFileURL", "storeLocation"], async function(fetchFileURL : string, storeLocation : string) {
+const overwrite = krl.Action(["originURL", "destinationURL"], async function(originURL : string, destinationURL : string) {
 	if (!await isStorageConnected(this, [])) {
-		throw MODULE_NAME + ":store needs a Pod to be connected.";
+		throw MODULE_NAME + ":overwrite needs a Pod to be connected.";
 	}
 	
-    let file : File = await createFileObject(fetchFileURL);
-	let checkedStoreLocation = checkFileURL(storeLocation, file.name);
-	this.log.debug("Store Location: " + checkedStoreLocation);
+    let file = await getNonPodFile(this, [originURL, destinationURL]);
+
+    let checkedDestinationURL = checkFileURL(destinationURL, file.name);
+	this.log.debug("Destination: " + checkedDestinationURL);
 
     overwriteFile(
-        checkedStoreLocation,
+        checkedDestinationURL,
         file,
         { fetch: authFetch }
     )
@@ -324,6 +327,13 @@ const overwrite = krl.Action(["fetchFileURL", "storeLocation"], async function(f
     .catch(error => {
         this.log.error("Error uploading file: ", error.message);
     });
+});
+const getNonPodFile = krl.Action(["originURL", "destinationURL"], async function(originURL : string, destinationURL : string) : Promise<File> {
+    let file : File;
+    let blob : Blob = await getBlob(originURL);
+    file = await createFileObject(blob, originURL, destinationURL);
+
+	return file;
 });
 const removeFile = krl.Action(["fileURL"], async function(fileURL : string) {
     await deleteFile(fileURL, { fetch: authFetch });
@@ -363,8 +373,8 @@ const copyFile = krl.Action(["fetchFileURL", "storeLocation"],
         const buffer = Buffer.from(arrayBuffer);
 	    
         // Writing the buffer to a file
-	const fileSystem = require('fs');
-        fileSystem.writeFile(url, buffer, (err : Error | null) => {
+	    const fileSystem = require('fs');
+        fs.writeFile(url, buffer, (err : Error | null) => {
           if (err) {
             console.error('Failed to save the file:', err);
           } else {
