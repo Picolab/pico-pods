@@ -28,7 +28,7 @@ document.addEventListener("DOMContentLoaded", function() {
             client_secret: clientSecret,
             token_url: tokenURL
         };
-        let pico = getPicoURL;
+        let pico = getPicoURL();
         
         fetch(`${pico}/1556/sample_app/attach_storage`, {
             method: 'POST',
@@ -71,7 +71,7 @@ function toggleDetachAttachButtons() {
     const attachPodButton = document.getElementById('attachPod');
     
     if (pod) {
-        let pico = getPicoURL;
+        let pico = getPicoURL();
         pod = false;
         detachPodButton.style.display = 'none';
         attachPodButton.style.display = 'inline-block';
@@ -348,7 +348,7 @@ async function deletFolderAction() {
         alert('You can only delete a empty folder!');
         return;
     }
-    const deleteEvent = `${getPicoURL}/1556/sample_app/remove_folder?containerURL=${getCurrentPath}`;
+    const deleteEvent = `${getPicoURL()}/1556/sample_app/remove_folder?containerURL=${getCurrentPath}`;
     const deleteResponse = await fetch(deleteEvent);
     if (!deleteResponse.ok) {
         throw new Error(`Delete folder failed: ${response.status}`);
@@ -414,7 +414,7 @@ async function addFolder(folderName) {
         folderName += '/';
     }
     const newPath = getCurrentPath() + folderName;
-    const event = `${getPicoURL}/1556/create_folder?containerURL=${newPath}`;
+    const event = `${getPicoURL()}/1556/create_folder?containerURL=${newPath}`;
     fetch(event)
     .then(response => {
         if (!response.ok) {
@@ -425,7 +425,7 @@ async function addFolder(folderName) {
 }
 
 async function getFileURL(item) {
-    const event = `${getPicoURL}/1556/sample_app/fetch_file?fileURL=${getCurrentPath + item}`;
+    const event = `${getPicoURL()}/1556/sample_app/fetch_file?fileURL=${getCurrentPath + item}`;
     const response = await fetch(event);
     if (!response.ok) {
         throw new Error(`Fetch file failed: ${response.status}`);
@@ -457,7 +457,7 @@ async function addFile(url) {
         originURL: url,
         destinationURL: destinationURL
     }).toString();
-    const event = `${getPicoURL}1556/sample_app/overwrite_file?${queryParams}`;
+    const event = `${getPicoURL()}1556/sample_app/overwrite_file?${queryParams}`;
     fetch(event)
     .then(response => {
         if (!response.ok) {
