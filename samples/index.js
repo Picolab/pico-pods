@@ -5,7 +5,7 @@ const podURL = 'http://localhost:3000/test/';
 document.addEventListener("DOMContentLoaded", function() {
     
     // Set default photo
-    setCurrentPath('');
+    setCurrentPath(podURL);
 
     // Show all items in the root storage URL
     fetchAndDisplayItems();
@@ -228,7 +228,7 @@ function toggleControlPanel(showDefaultButtons) {
     controlPanel.innerHTML = ''; // Clear existing buttons
     if (showDefaultButtons) {
         addButton('back', 'Back', backAction);
-        addButton('addPhoto', 'Add photo', addPhotoAction);
+        addButton('addFile', 'Add file', addFileAction);
         addButton('addFolder', 'Add folder', addFolderAction);
         addButton('deleteFolder', 'Delete folder', deleteFolderAction);
         addButton('sample', 'sample', sampleAction);
@@ -250,16 +250,16 @@ function getItemType(itemName) {
 
 function backAction() {
     if (lastURL.length == 0) {
-        fetchAndDisplayItems()
+        fetchAndDisplayItems();
     } else {
         fetchAndDisplayItems(lastURL.pop(), true);
     }
     toggleControlPanel(true);
 }
 
-function addPhotoAction() {
-    const addPhotoBtn = document.getElementById('addPhoto');
-    addPhotoBtn.style.display = 'none'; // Hide the button
+function addFileAction() {
+    const addFileBtn = document.getElementById('addFile');
+    addFileBtn.style.display = 'none'; // Hide the button
 
     const input = document.createElement('input');
     input.type = 'text';
@@ -274,14 +274,10 @@ function addPhotoAction() {
         if (url) {
             console.log(`Adding file from: ${url}`); 
             addFile(url, filename).then(() => {
-                fetchAndDisplayItems(getCurrentPath(), true);
                 alert('File added successfully!');
                 input.remove(); // Remove the input field
-                addPhotoBtn.style.display = ''; // Show the button again
-            }).catch(error => {
-                console.error('Error adding file:', error);
-                alert('Failed to add the file.');
-            });
+                addFileBtn.style.display = ''; // Show the button again
+            })
         }
     };
 
@@ -293,7 +289,7 @@ function addPhotoAction() {
     });
 
     // Insert the input field into the DOM, before the back button
-    addPhotoBtn.parentNode.insertBefore(input, addPhotoBtn);
+    addFileBtn.parentNode.insertBefore(input, addFileBtn);
     input.focus(); // Automatically focus the input field
 }
 
@@ -320,10 +316,7 @@ function addFolderAction() {
                 alert('Folder added successfully!');
                 input.remove(); // Remove the input field
                 addFolderBtn.style.display = ''; // Show the button again
-            }).catch(error => {
-                console.error('Error adding folder:', error);
-                alert('Failed to add the folder.');
-            });
+            })
         }
     };
 
@@ -400,7 +393,19 @@ async function handleFileSelect(event) {
 }
 
 function deleteFileAction() {
-
+    const event = `${getPicoURL()}1556/sample_app/remove_file?fileURL=${getCurrentPath()}`;
+    fetch(event)
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`Delete file failed: ${response.status}`);
+        }
+        fetchAndDisplayItems(lastURL.pop(), true);
+        toggleControlPanel(true);
+    })
+    .catch(error => {
+        console.error('Error deleting file:', error);
+        alert('Failed to delete the file.');
+    });
 }
 
 function copyAction() {
@@ -484,6 +489,7 @@ async function addFile(url, filename) {
         if (!response.ok) {
             throw new Error(`Add file failed: ${response.status}`);
         }
+        fetchAndDisplayItems(getCurrentPath(), true);
     })
     .catch(error => {
         console.error('Error adding file:', error);
