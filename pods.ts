@@ -524,7 +524,7 @@ const grantAccess = krl.Action(["resourceURL"], async function(resourceUrl: stri
         }
       });
 });
-const removeAccess = krl.Action(["resourceURL"], async function removeAccess(resourceUrl: string) {
+const removeAccess = krl.Action(["resourceURL"], async function(resourceUrl: string) {
     universalAccess.setPublicAccess(
         resourceUrl,  // Resource
         { read: false, write: false },    // Access object
