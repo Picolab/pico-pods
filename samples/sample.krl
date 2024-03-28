@@ -28,47 +28,47 @@ ruleset sample_app {
 	
 	rule store_file {
 		select when sample_app store_file
-		pods:store(event:attrs.get("fetchFileURL"), pods:getStorage + event:attrs.get("storeLocation"))
+		pods:store(event:attrs.get("fetchFileURL"), event:attrs.get("storeLocation"))
 	}
 
-	rule test_overwrite_file_with_name {
-		select when test overwrite_file
+	rule overwrite_file_with_name {
+		select when sample_app overwrite_file
 		if (event:attrs.get("fileName")) then
-			pods:overwrite(event:attrs.get("originURL"), pods:getStorage + event:attrs.get("destinationURL"), event:attrs.get("fileName"))
+			pods:overwrite(event:attrs.get("originURL"), event:attrs.get("destinationURL"), event:attrs.get("fileName"))
 	}
 
-	rule test_overwrite_file_no_name {
-		select when test overwrite_file
+	rule overwrite_file_no_name {
+		select when sample_app overwrite_file
 		if (not event:attrs.get("fileName")) then
-			pods:overwrite(event:attrs.get("originURL"), pods:getStorage + event:attrs.get("destinationURL"))
+			pods:overwrite(event:attrs.get("originURL"), event:attrs.get("destinationURL"))
 	}
 
 	rule remove_file {
 		select when sample_app remove_file
-		pods:removeFile(pods:getStorage + event:attrs.get("fileURL"))
+		pods:removeFile(event:attrs.get("fileURL"))
 	}
 
 	rule copy_file {
 		select when sample_app copy_file
-		pods:copyFile(pods:getStorage + event:attrs.get("fetchFileURL"),
+		pods:copyFile(event:attrs.get("fetchFileURL"),
 					event:attrs.get("storeLocation"))
 	}
 	
 	rule fetch_file {
 		select when sample_app fetch_file
 		pre {
-			dataURL = pods:fetch(pods:getStorage + event:attrs.get("fileURL"))
+			dataURL = pods:fetch(event:attrs.get("fileURL"))
 		}
 		send_directive(dataURL)
 	}
 	
 	rule create_folder {
 		select when sample_app create_folder
-		pods:createFolder(pods:getStorage + event:attrs.get("containerURL"))
+		pods:createFolder(event:attrs.get("containerURL"))
 	}
 	rule remove_folder {
 		select when sample_app remove_folder
-		pods:removeFolder(pods:getStorage + event:attrs.get("containerURL"))
+		pods:removeFolder(event:attrs.get("containerURL"))
 	}
 
 	rule grant_agent_access {
@@ -93,7 +93,7 @@ ruleset sample_app {
 	rule ls {
 		select when sample_app ls
 		pre {
-			list = pods:listItems(pods:getStorage + event:attrs.get("fileURL"))
+			list = pods:listItems(event:attrs.get("fileURL"))
 		}
 		send_directive(list)
 	}
