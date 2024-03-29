@@ -409,6 +409,25 @@ function removeAccessFromAction() {
     
 }
 
+async function search() {
+    const fileName = document.getElementById('searchInput').value;
+    const event = `${getPicoURL}/1556/find?fileName=${fileName}`
+
+    fetch(event)
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`Search failed: ${response.status}`);
+        }
+    })
+    const json = await response.json();
+    const path = json.directives[0].name;
+    if (path == nil) {
+        alert("File not found! Please make sure the file name is spelled correctly and the file extension is correct.")
+    } else {
+        displayFullSizePhoto(path, path);
+    }
+}
+
 async function addFolder(folderName) {
     if (!folderName.endsWith('/')) {
         folderName += '/';
