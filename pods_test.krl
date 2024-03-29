@@ -21,9 +21,15 @@ ruleset pods_test {
 		pods:authenticate()
 	}
 	
-	rule test_store_file {
+	rule test_store_file_with_name {
 		select when test store_file
-		pods:store(event:attrs.get("originURL"), event:attrs.get("destinationURL"))
+		if (event:attrs.get("fileName")) then
+			pods:overwrite(event:attrs.get("originURL"), event:attrs.get("destinationURL"), event:attrs.get("fileName"))
+	}
+	rule test_store_file_no_name {
+		select when test store_file
+		if (not event:attrs.get("fileName")) then
+			pods:overwrite(event:attrs.get("originURL"), event:attrs.get("destinationURL"))
 	}
 	rule test_overwrite_file_with_name {
 		select when test overwrite_file
@@ -93,5 +99,21 @@ ruleset pods_test {
 	rule test_find {
 		select when test find 
 		pods:findFile(event:attrs.get("fileName"))
+	}
+	
+	rule test_get_storage {
+		select when test get_storage
+		pre {
+			storeURL = pods:getStorage()
+		}
+		send_directive("Store URL found", {"store_url":storeURL})
+	}
+	
+	rule test_storage_entity {
+		select when test storage_entity
+		pre {
+			storeURL = ent:__pods_storageURL
+		}
+		send_directive("Store URL found", {"store_url":storeURL})
 	}
 }
