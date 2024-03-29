@@ -1,11 +1,12 @@
 let pod = true;
 let lastURL = [];
-const podURL = 'http://localhost:3000/test/';
+let storageURL;
 
-document.addEventListener("DOMContentLoaded", function() {
+document.addEventListener("DOMContentLoaded", async function() {
     
     // Set default photo
-    setCurrentPath(podURL);
+    storageURL = await getStorage();
+    setCurrentPath('');
 
     // Show all items in the root storage URL
     fetchAndDisplayItems();
@@ -18,7 +19,7 @@ document.addEventListener("DOMContentLoaded", function() {
     attachForm.addEventListener('submit', function(event) {
         event.preventDefault();
         
-        const storageURL = document.getElementById('podURL').value;
+        const storageURL = document.getElementById('storageURL').value;
         const clientID = document.getElementById('clientID').value;
         const clientSecret = document.getElementById('clientSecret').value;
         const tokenURL = document.getElementById('tokenURL').value;
@@ -131,7 +132,7 @@ function getCurrentPath() {
     return localStorage.getItem('currentPath');
 }
 
-async function fetchAndDisplayItems(folderPath = podURL, goBack = false) {
+async function fetchAndDisplayItems(folderPath = storageURL, goBack = false) {
     const event = `${getPicoURL()}1556/sample_app/ls?fileURL=${folderPath}`;
     try {
         const response = await fetch(event);
@@ -185,7 +186,7 @@ function createItemHTML(itemName, url) {
         case 'folder':
             src = 'folder.png'; 
             altText = 'Folder';
-            onClickAttribute = `onclick="fetchAndDisplayItems('${getCurrentPath()}${itemName}')"`;
+            onClickAttribute = `onclick="fetchAndDisplayItems('${getCurrentPath() + itemName}')"`;
             break;
         case 'photo':
             src = url; 
@@ -228,7 +229,7 @@ function toggleControlPanel(showDefaultButtons) {
     controlPanel.innerHTML = ''; // Clear existing buttons
     if (showDefaultButtons) {
         addButton('back', 'Back', backAction);
-        addButton('addFile', 'Add file', addFileAction);
+        addButton('addPhoto', 'Add photo', addPhotoAction);
         addButton('addFolder', 'Add folder', addFolderAction);
         addButton('deleteFolder', 'Delete folder', deleteFolderAction);
         addButton('sample', 'sample', sampleAction);
@@ -257,9 +258,9 @@ function backAction() {
     toggleControlPanel(true);
 }
 
-function addFileAction() {
-    const addFileBtn = document.getElementById('addFile');
-    addFileBtn.style.display = 'none'; // Hide the button
+function addPhotoAction() {
+    const addPhotoBtn = document.getElementById('addPhoto');
+    addPhotoBtn.style.display = 'none'; // Hide the button
 
     const input = document.createElement('input');
     input.type = 'text';
@@ -273,10 +274,10 @@ function addFileAction() {
         const filename = url.split('/').pop();
         if (url) {
             console.log(`Adding file from: ${url}`); 
-            addFile(url, filename).then(() => {
+            addPhoto(url, filename).then(() => {
                 alert('File added successfully!');
                 input.remove(); // Remove the input field
-                addFileBtn.style.display = ''; // Show the button again
+                addPhotoBtn.style.display = ''; // Show the button again
             })
         }
     };
@@ -289,7 +290,7 @@ function addFileAction() {
     });
 
     // Insert the input field into the DOM, before the back button
-    addFileBtn.parentNode.insertBefore(input, addFileBtn);
+    addPhotoBtn.parentNode.insertBefore(input, addPhotoBtn);
     input.focus(); // Automatically focus the input field
 }
 
@@ -451,7 +452,6 @@ async function getDataURL(item) {
     } catch (error) {
         console.error("Failed to fetch the file:", error);
     }
-
 }
 
 async function prefetchDataURLs(items) {
@@ -471,7 +471,7 @@ async function prefetchDataURLs(items) {
     return urlMap;
 }
 
-async function addFile(url, filename) {
+async function addPhoto(url, filename) {
     const storeLocation = getCurrentPath();
     const data = {
         fileName: filename,
@@ -502,4 +502,18 @@ function displayCurrentPath(path) {
     let pathToDisplay = path;
     const formattedPath = pathToDisplay.replace(/^https?:\/\//, ''); // Remove http:// or https://
     currentPathElement.textContent = formattedPath;
+}
+
+async function getStorage() {
+    try {
+        const event = `${getPicoURL()}1556/sample_app/get_storage`;
+        const response = await fetch(event);
+        if (!response.ok) {
+            throw new Error(`fetch storage URL failed: ${response.status}`);
+        }
+        const json = await response.json();
+        return json.directives[0].name;
+    } catch {
+        console.error("Failed to fetch the storage URL:", error);
+    }
 }
