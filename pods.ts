@@ -117,7 +117,7 @@ const hasValidAccessToken = krl.Function([], async function() {
 	let accessToken = await getAccessToken(this, []);
 	let receiveTime = await getAccessTokenReceiveTime(this, []);
 	let validDuration = await getAccessTokenValidDuration(this, []);
-	if (!accessToken) {
+	if (!accessToken || !receiveTime || !validDuration) {
 		return false;
 	}
 	if (accessToken && receiveTime && validDuration) {
@@ -137,8 +137,6 @@ const isStorageConnected = krl.Function([], async function() : Promise<boolean> 
 	if (!storeURL) {
 		return false;
 	}
-    const response = await fetch(storeURL, { method: "HEAD" });
-    console.log(`Got status: ${response.status}`);
 	return true;
 });
 
@@ -235,8 +233,23 @@ const authenticate = krl.Action([], async function authenticate() {
     authFetch = await buildAuthenticatedFetch(accessToken, { dpopKey });
 });
 
-
-
+/**
+ * This function checks the access token's expiration and authenticates a single time if the token has expired.
+ * If the token succeeds validation at any point, the function returns true immediately.
+ * If the token is still failing validation after an authenticate() call, the function returns a false.
+ */
+const autoAuth = krl.Action([], async function() : Promise<Boolean> {
+    let is_valid = await hasValidAccessToken(this, []);
+    if (is_valid) {
+        return true;
+    }
+    authenticate(this, []);
+    is_valid = await hasValidAccessToken(this, []);
+    if (is_valid) {
+        return true;
+    }
+    return false;
+});
 const connectStorage = krl.Action(["storageURL", "clientID", "clientSecret", "tokenURL"], 
 									async function(
 										storageURL : string,
