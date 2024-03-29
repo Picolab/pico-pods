@@ -1,11 +1,12 @@
 let pod = true;
 let lastURL = [];
+const podURL = 'http://localhost:3000/test/';
 
 document.addEventListener("DOMContentLoaded", function() {
-
-    // Set default photo
-    setCurrentPath('');
     
+    // Set default photo
+    setCurrentPath(podURL);
+
     // Show all items in the root storage URL
     fetchAndDisplayItems();
 
@@ -28,9 +29,9 @@ document.addEventListener("DOMContentLoaded", function() {
             client_secret: clientSecret,
             token_url: tokenURL
         };
-        let pico = getPicoURL;
+        let pico = getPicoURL();
         
-        fetch(`${pico}/1556/sample_app/attach_storage`, {
+        fetch(`${pico}1556/sample_app/attach_storage`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -71,11 +72,11 @@ function toggleDetachAttachButtons() {
     const attachPodButton = document.getElementById('attachPod');
     
     if (pod) {
-        let pico = getPicoURL;
+        let pico = getPicoURL();
         pod = false;
         detachPodButton.style.display = 'none';
         attachPodButton.style.display = 'inline-block';
-        fetch(`${pico}/1556/sample_app/detach_storage`)
+        fetch(`${pico}1556/sample_app/detach_storage`)
         .then(response => {
             if (!response.ok) {
                 throw new Error(`HTTP error! Status: ${response.status}`);
@@ -111,6 +112,9 @@ async function toggleFolder(folderHeader) {
 }
 
 function setPicoURL(url) {
+    if (!url.endsWith('/')) {
+        url += '/';
+    }
     localStorage.setItem('PicoURL', url);
 }
 
@@ -119,17 +123,15 @@ function getPicoURL() {
 }
 
 function setCurrentPath(url) {
-    if (!url.endsWith('/')) {
-        url += '/';
-    }
     localStorage.setItem('currentPath', url);
+    console.log(`setCurrentPath to ${url}`);
 }
 
 function getCurrentPath() {
     return localStorage.getItem('currentPath');
 }
 
-async function fetchAndDisplayItems(folderPath = '', goBack = false) {
+async function fetchAndDisplayItems(folderPath = podURL, goBack = false) {
     const event = `${getPicoURL()}1556/sample_app/ls?fileURL=${folderPath}`;
     try {
         const response = await fetch(event);
@@ -140,7 +142,6 @@ async function fetchAndDisplayItems(folderPath = '', goBack = false) {
         setCurrentPath(folderPath);
         const json = await response.json();
         let items = json.directives[0].name;
-
         if (items != null) {
             // Sort items by type: folders, photos, others
             items.sort((a, b) => {
@@ -154,7 +155,7 @@ async function fetchAndDisplayItems(folderPath = '', goBack = false) {
                 return 0;
             });
 
-            const urlMap = await prefetchFileURLs(items);
+            const urlMap = await prefetchDataURLs(items);
             const folderDiv = document.querySelector('.folder');
             folderDiv.innerHTML = ''; // Clear current contents
 
@@ -169,7 +170,7 @@ async function fetchAndDisplayItems(folderPath = '', goBack = false) {
         displayCurrentPath(getCurrentPath());        
 
     } catch (error) {
-        console.error("Failed to fetch items:", error);
+        console.error("Failed to fetch and display items:", error);
     }
 }
 
@@ -227,9 +228,9 @@ function toggleControlPanel(showDefaultButtons) {
     controlPanel.innerHTML = ''; // Clear existing buttons
     if (showDefaultButtons) {
         addButton('back', 'Back', backAction);
-        addButton('addPhoto', 'Add photo', addPhotoAction);
+        addButton('addFile', 'Add file', addFileAction);
         addButton('addFolder', 'Add folder', addFolderAction);
-        addButton('deleteFolder', 'Delete folder', deletFolderAction);
+        addButton('deleteFolder', 'Delete folder', deleteFolderAction);
         addButton('sample', 'sample', sampleAction);
     } else {
         addButton('back', 'Back', backAction);
@@ -249,16 +250,16 @@ function getItemType(itemName) {
 
 function backAction() {
     if (lastURL.length == 0) {
-        fetchAndDisplayItems()
+        fetchAndDisplayItems();
     } else {
         fetchAndDisplayItems(lastURL.pop(), true);
     }
     toggleControlPanel(true);
 }
 
-function addPhotoAction() {
-    const addPhotoBtn = document.getElementById('addPhoto');
-    addPhotoBtn.style.display = 'none'; // Hide the button
+function addFileAction() {
+    const addFileBtn = document.getElementById('addFile');
+    addFileBtn.style.display = 'none'; // Hide the button
 
     const input = document.createElement('input');
     input.type = 'text';
@@ -269,16 +270,14 @@ function addPhotoAction() {
 
     const submitNewFile = () => {
         const url = input.value.trim();
+        const filename = url.split('/').pop();
         if (url) {
             console.log(`Adding file from: ${url}`); 
-            addFile(url).then(() => {
+            addFile(url, filename).then(() => {
                 alert('File added successfully!');
                 input.remove(); // Remove the input field
-                addPhotoBtn.style.display = ''; // Show the button again
-            }).catch(error => {
-                console.error('Error adding folder:', error);
-                alert('Failed to add file.');
-            });
+                addFileBtn.style.display = ''; // Show the button again
+            })
         }
     };
 
@@ -290,7 +289,7 @@ function addPhotoAction() {
     });
 
     // Insert the input field into the DOM, before the back button
-    addPhotoBtn.parentNode.insertBefore(input, addPhotoBtn);
+    addFileBtn.parentNode.insertBefore(input, addFileBtn);
     input.focus(); // Automatically focus the input field
 }
 
@@ -306,17 +305,18 @@ function addFolderAction() {
     input.style.width = '150px';
 
     const submitNewFolder = () => {
-        const folderName = input.value.trim();
+        let folderName = input.value.trim();
         if (folderName) {
             console.log(`Adding folder: ${folderName}`); 
             addFolder(folderName).then(() => {
+                if (!folderName.endsWith('/')) {
+                    folderName += '/';
+                }
+                fetchAndDisplayItems(getCurrentPath() + folderName);
                 alert('Folder added successfully!');
                 input.remove(); // Remove the input field
                 addFolderBtn.style.display = ''; // Show the button again
-            }).catch(error => {
-                console.error('Error adding folder:', error);
-                alert('Failed to add folder.');
-            });
+            })
         }
     };
 
@@ -332,30 +332,33 @@ function addFolderAction() {
     input.focus(); // Automatically focus the input field
 }
 
-async function deletFolderAction() {
-    const listEvent = `${getPicoURL()}1556/sample_app/ls?fileURL=${getCurrentPath()}`;
-    if (getCurrentPath() == '') {
-        alert('You cannot delete the root folder!');
-        return;
+async function deleteFolderAction() {
+    try {
+        const listEvent = `${getPicoURL()}1556/sample_app/ls?fileURL=${getCurrentPath()}`;
+        if (getCurrentPath() == '') {
+            alert('You cannot delete the root folder!');
+            return;
+        }
+        const listResponse = await fetch(listEvent);
+        if (!listResponse.ok) {
+            throw new Error(`List folder failed: ${response.status}`);
+        }
+        const json = await listResponse.json();
+        const items = json.directives[0].name;
+        if (items.length != 0) {
+            alert('You can only delete a empty folder!');
+            return;
+        }
+        const deleteEvent = `${getPicoURL()}1556/sample_app/remove_folder?containerURL=${getCurrentPath()}`;
+        const deleteResponse = await fetch(deleteEvent);
+        if (!deleteResponse.ok) {
+            throw new Error(`Delete folder failed: ${response.status}`);
+        }
+        alert('Folder deleted successfully!');
+        fetchAndDisplayItems(lastURL.pop(), true);
+    } catch (error) {
+        console.error('Error deleting the folder:', error);
     }
-    const listResponse = await fetch(listEvent);
-    if (!listResponse.ok) {
-        throw new Error(`List folder failed: ${response.status}`);
-    }
-    const json = await listResponse.json();
-    const items = json.directives[0].name;
-    if (items.length != 0) {
-        alert('You can only delete a empty folder!');
-        return;
-    }
-    const deleteEvent = `${getPicoURL}/1556/sample_app/remove_folder?containerURL=${getCurrentPath}`;
-    const deleteResponse = await fetch(deleteEvent);
-    if (!deleteResponse.ok) {
-        throw new Error(`Delete folder failed: ${response.status}`);
-    }
-    // Success message
-    alert('Folder deleted successfully!');
-    fetchAndDisplayItems(lastURL.pop(), true);
 }
 
 function sampleAction() {
@@ -390,7 +393,19 @@ async function handleFileSelect(event) {
 }
 
 function deleteFileAction() {
-
+    const event = `${getPicoURL()}1556/sample_app/remove_file?fileURL=${getCurrentPath()}`;
+    fetch(event)
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`Delete file failed: ${response.status}`);
+        }
+        fetchAndDisplayItems(lastURL.pop(), true);
+        toggleControlPanel(true);
+    })
+    .catch(error => {
+        console.error('Error deleting file:', error);
+        alert('Failed to delete the file.');
+    });
 }
 
 function copyAction() {
@@ -429,34 +444,39 @@ async function search() {
 }
 
 async function addFolder(folderName) {
-    if (!folderName.endsWith('/')) {
-        folderName += '/';
-    }
     const newPath = getCurrentPath() + folderName;
-    const event = `${getPicoURL}/1556/create_folder?containerURL=${newPath}`;
+    const event = `${getPicoURL()}1556/sample_app/create_folder?containerURL=${newPath}`;
     fetch(event)
     .then(response => {
         if (!response.ok) {
             throw new Error(`Add folder failed: ${response.status}`);
         }
-        fetchAndDisplayItems(newPath);
     })
+    .catch(error => {
+        console.error('Error adding folder:', error);
+        alert('Failed to add the folder.');
+    });
 }
 
-async function getFileURL(item) {
-    const event = `${getPicoURL}/1556/sample_app/fetch_file?fileURL=${getCurrentPath + item}`;
-    const response = await fetch(event);
-    if (!response.ok) {
-        throw new Error(`Fetch file failed: ${response.status}`);
+async function getDataURL(item) {
+    try {
+        const event = `${getPicoURL()}1556/sample_app/fetch_file?fileURL=${getCurrentPath() + item}`;
+        const response = await fetch(event);
+        if (!response.ok) {
+            throw new Error(`Fetch file failed: ${response.status}`);
+        }
+        const json = await response.json();
+        return json.directives[0].name;
+    } catch (error) {
+        console.error("Failed to fetch the file:", error);
     }
-    const json = await response.json();
-    return json.directives[0].name;
+
 }
 
-async function prefetchFileURLs(items) {
+async function prefetchDataURLs(items) {
     const urlPromises = items.map(item => {
         if (getItemType(item) === 'photo') {
-            return getFileURL(item).then(url => ({ itemName: item, url }));
+            return getDataURL(item).then(url => ({ itemName: item, url }));
         }
         return Promise.resolve({ itemName: item, url: undefined });
     });
@@ -470,20 +490,30 @@ async function prefetchFileURLs(items) {
     return urlMap;
 }
 
-async function addFile(url) {
-    const destinationURL = getCurrentPath();
-    const queryParams = new URLSearchParams({
+async function addFile(url, filename) {
+    const storeLocation = getCurrentPath();
+    const data = {
+        fileName: filename,
         originURL: url,
-        destinationURL: destinationURL
-    }).toString();
-    const event = `${getPicoURL}1556/sample_app/overwrite_file?${queryParams}`;
-    fetch(event)
+        destinationURL: storeLocation
+    };
+    fetch(`${getPicoURL()}1556/sample_app/overwrite_file`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+    })
     .then(response => {
         if (!response.ok) {
             throw new Error(`Add file failed: ${response.status}`);
         }
         fetchAndDisplayItems(getCurrentPath(), true);
     })
+    .catch(error => {
+        console.error('Error adding file:', error);
+        alert('Failed to add the file.');
+    });
 }
 
 function displayCurrentPath(path) {
