@@ -293,6 +293,13 @@ function checkFileURL(fileURL : string, fileName : string) : string {
 	}
 	return newFileURL;
 }
+/**
+ * Stores a file in the connected Pod storage if the given Storage's directory to the file 
+ * already exists and the file does not already exist.
+ * @param originURL A required parameter for the location that the file is loaded into memory from. Must be an absolute url.
+ * @param destinationURL A required parameter for the location in the Pod to store the file in. Must be an absolute url.
+ * @param fileName An optional parameter for setting the file's name when it is stored in the Pod storage.
+ */
 const store = krl.Action(["originURL", "destinationURL", "fileName"], async function(originURL : string, destinationURL : string, fileName : string | undefined = undefined) {
 	if (!await isStorageConnected(this, [])) {
 		throw MODULE_NAME + ":store needs a Pod to be connected.";
