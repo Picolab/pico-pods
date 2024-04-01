@@ -70,14 +70,13 @@ const getStorage = krl.Function([], async function() : Promise<string | undefine
 	return this.rsCtx.getEnt(STORAGE_ENT_NAME);
 });
 const setStorage = krl.Action(["new_URL"], async function(new_URL : string | undefined) {
-	new_URL = standardizeURL(new_URL);
+	//new_URL = standardizeURL(new_URL);
 	this.rsCtx.putEnt(STORAGE_ENT_NAME, new_URL);
 });
 const getClientID = krl.Function([], async function() : Promise<string | undefined> {
 	return this.rsCtx.getEnt(CLIENT_ID_ENT_NAME);
 });
 const setClientID = krl.Action(["new_ID"], async function(new_ID : string | undefined) {
-	//new_ID = standardizeURL(new_ID);
 	this.rsCtx.putEnt(CLIENT_ID_ENT_NAME, new_ID);
 });
 const getClientSecret = krl.Function([], async function() : Promise<string | undefined> {
@@ -118,7 +117,7 @@ const hasValidAccessToken = krl.Function([], async function() {
 	let accessToken = await getAccessToken(this, []);
 	let receiveTime = await getAccessTokenReceiveTime(this, []);
 	let validDuration = await getAccessTokenValidDuration(this, []);
-	if (!accessToken) {
+	if (!accessToken || !receiveTime || !validDuration) {
 		return false;
 	}
 	if (accessToken && receiveTime && validDuration) {
@@ -134,7 +133,8 @@ const hasValidAccessToken = krl.Function([], async function() {
 	return true;
 });
 const isStorageConnected = krl.Function([], async function() : Promise<boolean> {
-	if (!await getStorage(this, [])) {
+    const storeURL : string | undefined = await getStorage(this, []);
+	if (!storeURL) {
 		return false;
 	}
 	return true;
@@ -233,8 +233,23 @@ const authenticate = krl.Action([], async function authenticate() {
     authFetch = await buildAuthenticatedFetch(accessToken, { dpopKey });
 });
 
-
-
+/**
+ * This function checks the access token's expiration and authenticates a single time if the token has expired.
+ * If the token succeeds validation at any point, the function returns true immediately.
+ * If the token is still failing validation after an authenticate() call, the function returns a false.
+ */
+const autoAuth = krl.Action([], async function() : Promise<Boolean> {
+    let is_valid = await hasValidAccessToken(this, []);
+    if (is_valid) {
+        return true;
+    }
+    authenticate(this, []);
+    is_valid = await hasValidAccessToken(this, []);
+    if (is_valid) {
+        return true;
+    }
+    return false;
+});
 const connectStorage = krl.Action(["storageURL", "clientID", "clientSecret", "tokenURL"], 
 									async function(
 										storageURL : string,
@@ -292,11 +307,11 @@ const store = krl.Action(["originURL", "destinationURL", "fileName"], async func
 	
     let file : File = await getNonPodFile(this, [originURL, destinationURL, fileName])
 
-    let checkedDestinationURL = checkFileURL(destinationURL, file.name);
-	this.log.debug("Destination: " + checkedDestinationURL);
+    //let checkedDestinationURL = checkFileURL(destinationURL, file.name);
+	this.log.debug("Destination: " + destinationURL);
 
     saveFileInContainer(
-        checkedDestinationURL,
+        destinationURL,
         file,
         { fetch: authFetch }
     )
@@ -314,11 +329,11 @@ const overwrite = krl.Action(["originURL", "destinationURL", "fileName"], async 
 	
     let file = await getNonPodFile(this, [originURL, destinationURL, fileName]);
 
-    let checkedDestinationURL = checkFileURL(destinationURL, file.name);
-	this.log.debug("Destination: " + checkedDestinationURL);
+    //let checkedDestinationURL = checkFileURL(destinationURL, file.name);
+	this.log.debug("Destination: " + destinationURL);
 
     overwriteFile(
-        checkedDestinationURL,
+        destinationURL,
         file,
         { fetch: authFetch }
     )
@@ -399,11 +414,14 @@ const pods_fetch = krl.Function(["fileURL"], async function(fileURL : string) {
 	const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
     const base64String = buffer.toString('base64');
-    const dataUrl = `data:image/jpeg;base64,${base64String}`;
+    const dataUrl = `data:${getContentType(file)};base64,${base64String}`;
 	return dataUrl;
 });
 
 const listItems = krl.Function(["fileURL"], async function(fileURL : string) {
+    let baseURL = await getStorage(this, []);
+    let newURL = baseURL + fileURL;
+
     if ((fileURL != '') && (!fileURL.endsWith('/'))) {
     	throw MODULE_NAME + ": listItems can only be called on containers. Ensure that containers have their trailing slash."
     }
@@ -411,13 +429,13 @@ const listItems = krl.Function(["fileURL"], async function(fileURL : string) {
     let dataset;
     
     try {
-        dataset = await getSolidDataset(fileURL, { fetch: authFetch });
+        dataset = await getSolidDataset(newURL, { fetch: authFetch });
         let containedResources = getContainedResourceUrlAll(dataset)
         
         let directory : string[] = [];
         for (let i = 0; i < containedResources.length; i++) {
             let resource = containedResources[i]
-            let item = resource.substring(fileURL.length, resource.length);
+            let item = resource.substring(newURL.length, resource.length);
             directory.push(item);
         }
     
@@ -432,12 +450,11 @@ const listItems = krl.Function(["fileURL"], async function(fileURL : string) {
 
 const findFile = krl.Function(["fileName"], async function (fileName : string) {
     // first item: get the root directory
-    let baseURL = await getStorage(this, [])
-    let directory = await listItems(this, [baseURL]);
+    let directory = await listItems(this, [""]);
     let queue : string[][] = [];
     queue.push(directory);
     let urls : string[] = []
-    urls.push(baseURL);
+    urls.push("");
 
     // using a breadth-first search, only on directories
     // each directory, when listed, returns an array (or undefined)
@@ -451,6 +468,7 @@ const findFile = krl.Function(["fileName"], async function (fileName : string) {
           return url;
       }
 
+      console.log("made it here");
       // go through each subdirectory and enqueue all of them
       if (dir != undefined) {
           for (let i = 0; i < dir?.length; i++) {
@@ -524,7 +542,7 @@ const grantAccess = krl.Action(["resourceURL"], async function(resourceUrl: stri
         }
       });
 });
-const removeAccess = krl.Action(["resourceURL"], async function(resourceUrl: string) {
+const removeAccess = krl.Action(["resourceURL"], async function removeAccess(resourceUrl: string) {
     universalAccess.setPublicAccess(
         resourceUrl,  // Resource
         { read: false, write: false },    // Access object

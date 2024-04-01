@@ -102,4 +102,9 @@ ruleset sample_app {
 		select when sample_app find 
 		pods:findFile(event:attrs.get("fileName"))
 	}
+
+	rule get_storage {
+		select when sample_app get_storage
+		send_directive(pods:getStorage())
+	}
 }
