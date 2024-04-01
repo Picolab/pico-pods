@@ -419,9 +419,6 @@ const pods_fetch = krl.Function(["fileURL"], async function(fileURL : string) {
 });
 
 const listItems = krl.Function(["fileURL"], async function(fileURL : string) {
-    let baseURL = await getStorage(this, []);
-    let newURL = baseURL + fileURL;
-
     if ((fileURL != '') && (!fileURL.endsWith('/'))) {
     	throw MODULE_NAME + ": listItems can only be called on containers. Ensure that containers have their trailing slash."
     }
@@ -429,13 +426,13 @@ const listItems = krl.Function(["fileURL"], async function(fileURL : string) {
     let dataset;
     
     try {
-        dataset = await getSolidDataset(newURL, { fetch: authFetch });
+        dataset = await getSolidDataset(fileURL, { fetch: authFetch });
         let containedResources = getContainedResourceUrlAll(dataset)
         
         let directory : string[] = [];
         for (let i = 0; i < containedResources.length; i++) {
             let resource = containedResources[i]
-            let item = resource.substring(newURL.length, resource.length);
+            let item = resource.substring(fileURL.length, resource.length);
             directory.push(item);
         }
     
@@ -450,11 +447,12 @@ const listItems = krl.Function(["fileURL"], async function(fileURL : string) {
 
 const findFile = krl.Function(["fileName"], async function (fileName : string) {
     // first item: get the root directory
-    let directory = await listItems(this, [""]);
+    let baseURL = await getStorage(this, [])
+    let directory = await listItems(this, [baseURL]);
     let queue : string[][] = [];
     queue.push(directory);
     let urls : string[] = []
-    urls.push("");
+    urls.push(baseURL);
 
     // using a breadth-first search, only on directories
     // each directory, when listed, returns an array (or undefined)
@@ -468,7 +466,6 @@ const findFile = krl.Function(["fileName"], async function (fileName : string) {
           return url;
       }
 
-      console.log("made it here");
       // go through each subdirectory and enqueue all of them
       if (dir != undefined) {
           for (let i = 0; i < dir?.length; i++) {
@@ -542,7 +539,7 @@ const grantAccess = krl.Action(["resourceURL"], async function(resourceUrl: stri
         }
       });
 });
-const removeAccess = krl.Action(["resourceURL"], async function removeAccess(resourceUrl: string) {
+const removeAccess = krl.Action(["resourceURL"], async function(resourceUrl: string) {
     universalAccess.setPublicAccess(
         resourceUrl,  // Resource
         { read: false, write: false },    // Access object
