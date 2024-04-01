@@ -310,10 +310,6 @@ function addFolderAction() {
         if (folderName) {
             console.log(`Adding folder: ${folderName}`); 
             addFolder(folderName).then(() => {
-                if (!folderName.endsWith('/')) {
-                    folderName += '/';
-                }
-                fetchAndDisplayItems(getCurrentPath() + folderName);
                 alert('Folder added successfully!');
                 input.remove(); // Remove the input field
                 addFolderBtn.style.display = ''; // Show the button again
@@ -426,6 +422,9 @@ function removeAccessFromAction() {
 }
 
 async function addFolder(folderName) {
+    if (!folderName.endsWith('/')) {
+        folderName += '/';
+    }
     const newPath = getCurrentPath() + folderName;
     const event = `${getPicoURL()}1556/sample_app/create_folder?containerURL=${newPath}`;
     fetch(event)
@@ -433,6 +432,7 @@ async function addFolder(folderName) {
         if (!response.ok) {
             throw new Error(`Add folder failed: ${response.status}`);
         }
+        fetchAndDisplayItems(newPath);
     })
     .catch(error => {
         console.error('Error adding folder:', error);
