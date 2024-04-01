@@ -100,7 +100,10 @@ ruleset sample_app {
 
 	rule find {
 		select when sample_app find 
-		pods:findFile(event:attrs.get("fileName"))
+		pre {
+			file = pods:findFile(event:attrs.get("fileName"))
+		}
+		send_directive(file)
 	}
 
 	rule get_storage {

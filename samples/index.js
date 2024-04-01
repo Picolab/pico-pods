@@ -427,20 +427,22 @@ function removeAccessFromAction() {
 
 async function search() {
     const fileName = document.getElementById('searchInput').value;
-    const event = `${getPicoURL}/1556/find?fileName=${fileName}`
+    const event = `${getPicoURL()}1556/sample_app/find?fileName=${fileName}`
 
-    fetch(event)
-    .then(response => {
+    try {
+        const response = await fetch(event);
         if (!response.ok) {
             throw new Error(`Search failed: ${response.status}`);
         }
-    })
-    const json = await response.json();
-    const path = json.directives[0].name;
-    if (path == nil) {
-        alert("File not found! Please make sure the file name is spelled correctly and the file extension is correct.")
-    } else {
-        displayFullSizePhoto(path, path);
+        const json = await response.json();
+        const path = json.directives[0].name + fileName;
+        if (path == null) {
+            alert("File not found! Please make sure the file name is spelled correctly and the file extension is correct.")
+        } else {
+            displayFullSizePhoto(path, path);
+        }
+    } catch (error) {
+        console.log("error in search: " + error);
     }
 }
 

@@ -13,7 +13,7 @@
     <button id="attachPod" class="attach-button" onclick="toggleDetachAttachButtons()">Attach pod</button>
     <div class="navbar">
         <input type="text" id="searchInput" class="search-input" placeholder="Search...">
-        <button id="searchPhoto">Search photo</button>
+        <button id="searchPhoto" type="click" onclick="search()">Search photo</button>
         <button id="listAllPhotos" class="toggle-button active" onclick="allPhotos()">All Photos</button>
         <button id="listAllSharedPhotos" class="toggle-button" onclick="sharedPhotos()">Shared Photos</button>
     </div>
@@ -58,8 +58,8 @@
             <h2>Connect Pod</h2>
         <form id="loginForm">
             <div class="input-group">
-                <input type="text" id="podURL" required>
-                <label for="podURL">Pod URL</label>
+                <input type="text" id="storageURL" required>
+                <label for="storageURL">Pod URL</label>
             </div>
             <div class="input-group">
                 <input type="text" id="clientID" required>
