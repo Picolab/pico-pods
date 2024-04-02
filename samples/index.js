@@ -294,7 +294,7 @@ function addPhotoAction() {
         }
     });
 
-    // Insert the input field into the DOM, before the back button
+    // Insert the input field into the DOM, after the back button
     addPhotoBtn.parentNode.insertBefore(input, addPhotoBtn);
     input.focus(); // Automatically focus the input field
 }
@@ -334,7 +334,7 @@ function addFolderAction() {
         }
     });
 
-    // Insert the input field into the DOM, before the add folder button
+    // Insert the input field into the DOM, after the add photo button
     addFolderBtn.parentNode.insertBefore(input, addFolderBtn);
     input.focus(); // Automatically focus the input field
 }
@@ -431,7 +431,44 @@ async function grantAccessAction() {
 }
 
 function grantAccessToAction() {
+    const grantAccessBtn = document.getElementById('grantAccessTo');
+    grantAccessBtn.style.display = 'none'; // Hide the button
 
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.id = 'webIDInput';
+    input.className = 'grantAccessInput'; 
+    input.placeholder = 'Enter WebID';
+    input.style.width = '150px';
+
+    const submitNewGrantAccessRequest = () => {
+        let webID = input.value.trim();
+        if (webID) {
+            console.log(`Granting access to: ${webID}`); 
+            grantAccessTo(getCurrentPath(), webID).then(() => {
+                alert(`Access grant to ${webID} successfully!`);
+                input.remove(); // Remove the input field
+                grantAccessBtn.style.display = ''; // Show the button again
+            })
+        }
+    };
+
+    // Listen for the Enter key in the input field
+    input.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            if (input.value.trim() == '') {
+                input.remove();
+                grantAccessBtn.style.display = ''; // Show the button again
+            } else {
+                submitNewGrantAccessRequest();
+            }
+            
+        }
+    });
+
+    // Insert the input field into the DOM, after the private/public button
+    grantAccessBtn.parentNode.insertBefore(input, grantAccessBtn);
+    input.focus(); // Automatically focus the input field
 }
 
 function removeAccessFromAction() {
@@ -578,6 +615,30 @@ async function getAccess() {
         return 'Private';
     }
     return 'Public';
+}
+
+async function grantAccessTo(resourceURL, webID) {
+    const data = {
+        resourceURL: resourceURL,
+        webID: webID,
+    };
+    fetch(`${getPicoURL()}1556/sample_app/grant_agent_access`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`Grant Access to ${webID} failed: ${response.status}`);
+        }
+    })
+    .catch(error => {
+        console.error('Error granting access:', error);
+        alert(`Failed to grant access to ${webID}.`);
+    });
+
 }
 
 function displayCurrentPath(path) {
