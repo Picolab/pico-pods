@@ -66,18 +66,17 @@ function standardizeURL(inputURL : string | undefined) : string | undefined {
 
 	return outputURL;
 };
-const getStorage = krl.Function([], async function() {
+const getStorage = krl.Function([], async function() : Promise<string | undefined> {
 	return this.rsCtx.getEnt(STORAGE_ENT_NAME);
 });
 const setStorage = krl.Action(["new_URL"], async function(new_URL : string | undefined) {
-	new_URL = standardizeURL(new_URL);
+	//new_URL = standardizeURL(new_URL);
 	this.rsCtx.putEnt(STORAGE_ENT_NAME, new_URL);
 });
 const getClientID = krl.Function([], async function() : Promise<string | undefined> {
 	return this.rsCtx.getEnt(CLIENT_ID_ENT_NAME);
 });
 const setClientID = krl.Action(["new_ID"], async function(new_ID : string | undefined) {
-	//new_ID = standardizeURL(new_ID);
 	this.rsCtx.putEnt(CLIENT_ID_ENT_NAME, new_ID);
 });
 const getClientSecret = krl.Function([], async function() : Promise<string | undefined> {
@@ -118,7 +117,7 @@ const hasValidAccessToken = krl.Function([], async function() {
 	let accessToken = await getAccessToken(this, []);
 	let receiveTime = await getAccessTokenReceiveTime(this, []);
 	let validDuration = await getAccessTokenValidDuration(this, []);
-	if (!accessToken) {
+	if (!accessToken || !receiveTime || !validDuration) {
 		return false;
 	}
 	if (accessToken && receiveTime && validDuration) {
@@ -134,7 +133,8 @@ const hasValidAccessToken = krl.Function([], async function() {
 	return true;
 });
 const isStorageConnected = krl.Function([], async function() : Promise<boolean> {
-	if (!await getStorage(this, [])) {
+    const storeURL : string | undefined = await getStorage(this, []);
+	if (!storeURL) {
 		return false;
 	}
 	return true;
@@ -233,8 +233,23 @@ const authenticate = krl.Action([], async function authenticate() {
     authFetch = await buildAuthenticatedFetch(accessToken, { dpopKey });
 });
 
-
-
+/**
+ * This function checks the access token's expiration and authenticates a single time if the token has expired.
+ * If the token succeeds validation at any point, the function returns true immediately.
+ * If the token is still failing validation after an authenticate() call, the function returns a false.
+ */
+const autoAuth = krl.Action([], async function() : Promise<Boolean> {
+    let is_valid = await hasValidAccessToken(this, []);
+    if (is_valid) {
+        return true;
+    }
+    authenticate(this, []);
+    is_valid = await hasValidAccessToken(this, []);
+    if (is_valid) {
+        return true;
+    }
+    return false;
+});
 const connectStorage = krl.Action(["storageURL", "clientID", "clientSecret", "tokenURL"], 
 									async function(
 										storageURL : string,
@@ -292,11 +307,11 @@ const store = krl.Action(["originURL", "destinationURL", "fileName"], async func
 	
     let file : File = await getNonPodFile(this, [originURL, destinationURL, fileName])
 
-    let checkedDestinationURL = checkFileURL(destinationURL, file.name);
-	this.log.debug("Destination: " + checkedDestinationURL);
+    //let checkedDestinationURL = checkFileURL(destinationURL, file.name);
+	this.log.debug("Destination: " + destinationURL);
 
     saveFileInContainer(
-        checkedDestinationURL,
+        destinationURL,
         file,
         { fetch: authFetch }
     )
@@ -314,11 +329,11 @@ const overwrite = krl.Action(["originURL", "destinationURL", "fileName"], async 
 	
     let file = await getNonPodFile(this, [originURL, destinationURL, fileName]);
 
-    let checkedDestinationURL = checkFileURL(destinationURL, file.name);
-	this.log.debug("Destination: " + checkedDestinationURL);
+    //let checkedDestinationURL = checkFileURL(destinationURL, file.name);
+	this.log.debug("Destination: " + destinationURL);
 
     overwriteFile(
-        checkedDestinationURL,
+        destinationURL,
         file,
         { fetch: authFetch }
     )
@@ -399,7 +414,7 @@ const pods_fetch = krl.Function(["fileURL"], async function(fileURL : string) {
 	const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
     const base64String = buffer.toString('base64');
-    const dataUrl = `data:image/jpeg;base64,${base64String}`;
+    const dataUrl = `data:${getContentType(file)};base64,${base64String}`;
 	return dataUrl;
 });
 
@@ -548,6 +563,10 @@ const removeAccess = krl.Action(["resourceURL"], async function(resourceURL: str
       });
 });
 
+
+
+
+
 const pods: krl.Module = {
 	connectStorage: connectStorage,
 	disconnectStorage: disconnectStorage,
@@ -575,7 +594,7 @@ const pods: krl.Module = {
 	authenticate: authenticate,
 	grantAgentAccess: grantAgentAccess,
 	removeAgentAccess: removeAgentAccess,
-    getAccess : getAccess,
+    getAccess: getAccess,
 	grantAccess: grantAccess,
 	removeAccess: removeAccess,
 }
