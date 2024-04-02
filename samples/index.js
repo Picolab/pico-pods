@@ -235,7 +235,7 @@ function toggleControlPanel(showDefaultButtons) {
         addButton('sample', 'sample', sampleAction);
     } else {
         addButton('back', 'Back', backAction);
-        addButton('deletePhoto', 'Delete photo', deleteFileAction);
+        addButton('deletePhoto', 'Delete photo', deletePhotoAction);
         addButton('copy', 'Copy', copyAction);
         addButton('grantAccessToggle', 'Private', grantAccessAction);
         addButton('grantAccessTo', 'Grant Access to', grantAccessToAction);
@@ -389,19 +389,19 @@ async function handleFileSelect(event) {
     }
 }
 
-function deleteFileAction() {
+function deletePhotoAction() {
     const event = `${getPicoURL()}1556/sample_app/remove_file?fileURL=${getCurrentPath()}`;
     fetch(event)
     .then(response => {
         if (!response.ok) {
-            throw new Error(`Delete file failed: ${response.status}`);
+            throw new Error(`Delete photo failed: ${response.status}`);
         }
         fetchAndDisplayItems(lastURL.pop(), true);
         toggleControlPanel(true);
     })
     .catch(error => {
-        console.error('Error deleting file:', error);
-        alert('Failed to delete the file.');
+        console.error('Error deleting photo:', error);
+        alert('Failed to delete the photo.');
     });
 }
 
@@ -410,7 +410,14 @@ function copyAction() {
 }
 
 function grantAccessAction() {
-
+    const access = document.getElementById('grantAccessToggle').textContent;
+    if (access == 'Private') {
+        grantAccess(getCurrentPath());
+        document.getElementById('grantAccessToggle').textContent = 'Public';
+    } else {
+        removeAccess(getCurrentPath());
+        document.getElementById('grantAccessToggle').textContent = 'Private';
+    }
 }
 
 function grantAccessToAction() {
@@ -508,14 +515,46 @@ async function addPhoto(url, filename) {
     })
     .then(response => {
         if (!response.ok) {
-            throw new Error(`Add file failed: ${response.status}`);
+            throw new Error(`Add photo failed: ${response.status}`);
         }
         fetchAndDisplayItems(getCurrentPath(), true);
     })
     .catch(error => {
-        console.error('Error adding file:', error);
-        alert('Failed to add the file.');
+        console.error('Error adding photo:', error);
+        alert('Failed to add the photo.');
     });
+}
+
+async function grantAccess(url) {
+    const event = `${getPicoURL()}1556/sample_app/grant_access?resourceURL=${url}`;
+    fetch(event)
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`Make photo public failed: ${response.status}`);
+        }
+        console.log(`${url} is now public.`)
+        alert('The photo is now public!');
+    })
+    .catch(error => {
+        console.error('Error making photo public:', error);
+        alert('Failed to make the photo public.');
+    })
+}
+
+async function removeAccess(url) {
+    const event = `${getPicoURL()}1556/sample_app/remove_access?resourceURL=${url}`;
+    fetch(event)
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`Make photo private failed: ${response.status}`);
+        }
+        console.log(`${url} is now private.`)
+        alert('The photo is now private!');
+    })
+    .catch(error => {
+        console.error('Error making photo private:', error);
+        alert('Failed to make the photo private.');
+    })
 }
 
 function displayCurrentPath(path) {
