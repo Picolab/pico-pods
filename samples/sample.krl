@@ -81,6 +81,11 @@ ruleset sample_app {
 		pods:removeAgentAccess(event:attrs.get("resourceURL"), event:attrs.get("webID"))
 	}
 	
+	rule get_access {
+		select when sample_app get_access
+		send_directive(pods:getAccess(event:attrs.get("resourceURL")))
+	}
+
 	rule grant_access {
 		select when sample_app grant_access
 		pods:grantAccess(event:attrs.get("resourceURL"))
