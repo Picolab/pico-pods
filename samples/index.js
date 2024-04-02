@@ -224,7 +224,7 @@ function addButton(id, text, action) {
     document.querySelector('.control-panel').appendChild(button);
 }
 
-function toggleControlPanel(showDefaultButtons) {
+async function toggleControlPanel(showDefaultButtons) {
     const controlPanel = document.querySelector('.control-panel');
     controlPanel.innerHTML = ''; // Clear existing buttons
     if (showDefaultButtons) {
@@ -237,7 +237,7 @@ function toggleControlPanel(showDefaultButtons) {
         addButton('back', 'Back', backAction);
         addButton('deletePhoto', 'Delete photo', deletePhotoAction);
         addButton('copy', 'Copy', copyAction);
-        addButton('grantAccessToggle', 'Private', grantAccessAction);
+        addButton('grantAccessToggle', await getAccess(), grantAccessAction);
         addButton('grantAccessTo', 'Grant Access to', grantAccessToAction);
         addButton('removeAccessFrom', 'Remove Access from', removeAccessFromAction);
     }
@@ -409,7 +409,7 @@ function copyAction() {
 
 }
 
-function grantAccessAction() {
+async function grantAccessAction() {
     const access = document.getElementById('grantAccessToggle').textContent;
     if (access == 'Private') {
         grantAccess(getCurrentPath());
@@ -555,6 +555,19 @@ async function removeAccess(url) {
         console.error('Error making photo private:', error);
         alert('Failed to make the photo private.');
     })
+}
+
+async function getAccess() {
+    const event = `${getPicoURL()}1556/sample_app/get_access?resourceURL=${getCurrentPath()}`;
+    const response = await fetch(event);
+    if (!response.ok) {
+        throw new Error(`Get photo access failed: ${response.status}`);
+    }
+    const json = await response.json();
+    if (json.directives[0].name == 'false') {
+        return 'Private';
+    }
+    return 'Public';
 }
 
 function displayCurrentPath(path) {
