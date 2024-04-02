@@ -264,12 +264,12 @@ function addPhotoAction() {
 
     const input = document.createElement('input');
     input.type = 'text';
-    input.id = 'folderNameInput';
+    input.id = 'photoNameInput';
     input.className = 'addPhotoInput'; 
-    input.placeholder = 'Enter file URL';
+    input.placeholder = 'Enter photo URL';
     input.style.width = '150px';
 
-    const submitNewFile = () => {
+    const submitNewPhoto = () => {
         const url = input.value.trim();
         const filename = url.split('/').pop();
         if (url) {
@@ -285,7 +285,12 @@ function addPhotoAction() {
     // Listen for the Enter key in the input field
     input.addEventListener('keypress', function(e) {
         if (e.key === 'Enter') {
-            submitNewFile();
+            if (input.value.trim() == '') {
+                input.remove(); // Remove the input field
+                addPhotoBtn.style.display = ''; // Show the button again
+            } else {
+                submitNewPhoto();
+            }
         }
     });
 
@@ -320,7 +325,12 @@ function addFolderAction() {
     // Listen for the Enter key in the input field
     input.addEventListener('keypress', function(e) {
         if (e.key === 'Enter') {
-            submitNewFolder();
+            if (input.value.trim() == '') {
+                input.remove(); // Remove the input field
+                addFolderBtn.style.display = ''; // Show the button again
+            } else {
+                submitNewFolder();
+            }
         }
     });
 
