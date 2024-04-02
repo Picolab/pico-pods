@@ -265,7 +265,7 @@ function addPhotoAction() {
     const input = document.createElement('input');
     input.type = 'text';
     input.id = 'folderNameInput';
-    input.className = 'searchInput'; 
+    input.className = 'addPhotoInput'; 
     input.placeholder = 'Enter file URL';
     input.style.width = '150px';
 
@@ -301,7 +301,7 @@ function addFolderAction() {
     const input = document.createElement('input');
     input.type = 'text';
     input.id = 'folderNameInput';
-    input.className = 'searchInput'; 
+    input.className = 'addFolderInput'; 
     input.placeholder = 'Enter folder name';
     input.style.width = '150px';
 
@@ -332,7 +332,7 @@ function addFolderAction() {
 async function deleteFolderAction() {
     try {
         const listEvent = `${getPicoURL()}1556/sample_app/ls?fileURL=${getCurrentPath()}`;
-        if (getCurrentPath() == '') {
+        if (getCurrentPath() == storageURL) {
             alert('You cannot delete the root folder!');
             return;
         }
@@ -493,7 +493,7 @@ async function prefetchDataURLs(items) {
 }
 
 async function addPhoto(url, filename) {
-    const storeLocation = getCurrentPath();
+    const storeLocation = getCurrentPath() + filename;
     const data = {
         fileName: filename,
         originURL: url,
