@@ -438,7 +438,7 @@ function grantAccessToAction() {
     input.type = 'text';
     input.id = 'webIDInput';
     input.className = 'grantAccessInput'; 
-    input.placeholder = 'Enter WebID';
+    input.placeholder = 'Enter a webID';
     input.style.width = '150px';
 
     const submitNewGrantAccessRequest = () => {
@@ -446,6 +446,7 @@ function grantAccessToAction() {
         if (webID) {
             console.log(`Granting access to: ${webID}`); 
             grantAccessTo(getCurrentPath(), webID).then(() => {
+                console.log(`Access grant to ${webID} successfully!`);
                 alert(`Access grant to ${webID} successfully!`);
                 input.remove(); // Remove the input field
                 grantAccessBtn.style.display = ''; // Show the button again
@@ -459,10 +460,11 @@ function grantAccessToAction() {
             if (input.value.trim() == '') {
                 input.remove();
                 grantAccessBtn.style.display = ''; // Show the button again
+            } else if (!(input.value.trim().startsWith('http://') || input.value.trim().startsWith('https://'))){
+                alert('WebID must be an URL!');           
             } else {
                 submitNewGrantAccessRequest();
             }
-            
         }
     });
 
@@ -471,8 +473,69 @@ function grantAccessToAction() {
     input.focus(); // Automatically focus the input field
 }
 
-function removeAccessFromAction() {
-    
+async function removeAccessFromAction() {
+    try {
+        const webIDs = await getAllAgentAccess(); 
+        const grantAccessToBtn = document.getElementById('grantAccessTo');
+        const removeAccessBtn = document.getElementById('removeAccessFrom');
+        removeAccessBtn.style.display = 'none'; 
+
+        const container = document.createElement('div');
+        container.id = 'webIDSelectionContainer';
+        container.style.display = 'inline-flex'; 
+        container.style.alignItems = 'center';
+        container.style.gap = '5px'; 
+
+        // Create and append the dropdown
+        const select = document.createElement('select');
+        select.id = 'webIDSelect';
+        const defaultOption = document.createElement('option');
+        defaultOption.textContent = 'Select a webID';
+        defaultOption.value = '';
+        select.appendChild(defaultOption);
+
+        webIDs.slice(1).forEach(id => { // Skip the owner's WebID
+            const option = document.createElement('option');
+            option.value = id;
+            option.textContent = id;
+            select.appendChild(option);
+        });
+        container.appendChild(select);
+
+        // Remove Button
+        const removeButton = document.createElement('button');
+        removeButton.textContent = 'Remove';
+        removeButton.onclick = function() {
+            const webID = select.value;
+            if (webID) {
+                console.log(`Removing access from ${webID}`);
+                removeAccessFrom(webID)
+                .then(() => {
+                    console.log(`Remove access from ${webID} successfully!`);
+                    alert(`Remove access from ${webID} successfully!`);
+                    container.remove(); 
+                    removeAccessBtn.style.display = 'inline-block'; 
+                })
+            } else {
+                alert('Please select a WebID.');
+            }
+        };
+        container.appendChild(removeButton);
+
+        // Cancel Button
+        const cancelButton = document.createElement('button');
+        cancelButton.textContent = 'Cancel';
+        cancelButton.onclick = function() {
+            container.remove(); 
+            removeAccessBtn.style.display = 'inline-block'; 
+        };
+        container.appendChild(cancelButton);
+
+        // Insert the container next to the "Grant Access To" button
+        grantAccessToBtn.parentNode.insertBefore(container, grantAccessToBtn.nextSibling);
+    } catch (error) {
+        console.error('Failed to fetch WebIDs:', error);
+    }
 }
 
 async function search() {
@@ -638,7 +701,39 @@ async function grantAccessTo(resourceURL, webID) {
         console.error('Error granting access:', error);
         alert(`Failed to grant access to ${webID}.`);
     });
+}
 
+async function getAllAgentAccess() {
+    const event = `${getPicoURL()}1556/sample_app/get_all_agent_access?resourceURL=${getCurrentPath()}`;
+    const response = await fetch(event);
+    if (!response.ok) {
+        throw new Error(`Get all agents access failed: ${response.status}`);
+    }
+    const json = await response.json();
+    return json.directives[0].name;
+}
+
+async function removeAccessFrom(webID) {
+    const data = {
+        resourceURL: getCurrentPath(),
+        webID: webID,
+    };
+    fetch(`${getPicoURL()}1556/sample_app/remove_agent_access`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`Grant Access to ${webID} failed: ${response.status}`);
+        }
+    })
+    .catch(error => {
+        console.error('Error removing access:', error);
+        alert(`Failed to remove access from ${webID}.`);
+    });
 }
 
 function displayCurrentPath(path) {
