@@ -474,29 +474,25 @@ const pods_fetch = krl.Function(["fileURL", "doAutoAuth"], async function(fileUR
 });
 
 const listItems = krl.Function(["fileURL", "doAutoAuth"], async function(fileURL : string, doAutoAuth : Boolean = true) {
+    if ((fileURL != '') && (!fileURL.endsWith('/'))) {
+    	throw MODULE_NAME + ":listItems can only be called on containers. Ensure that containers have their trailing slash."
+    }
     if (doAutoAuth) {
         if (!await autoAuth(this, [])) {
             throw MODULE_NAME + ":listItems could not validate Pod access token.";
         }
     }
-
-    let baseURL = await getStorage(this, []);
-    let newURL = baseURL + fileURL;
-
-    if ((fileURL != '') && (!fileURL.endsWith('/'))) {
-    	throw MODULE_NAME + ":listItems can only be called on containers. Ensure that containers have their trailing slash."
-    }
     
     let dataset;
     
     try {
-        dataset = await getSolidDataset(newURL, { fetch: authFetch });
+        dataset = await getSolidDataset(fileURL, { fetch: authFetch });
         let containedResources = getContainedResourceUrlAll(dataset)
         
         let directory : string[] = [];
         for (let i = 0; i < containedResources.length; i++) {
             let resource = containedResources[i]
-            let item = resource.substring(newURL.length, resource.length);
+            let item = resource.substring(fileURL.length, resource.length);
             directory.push(item);
         }
     
@@ -517,11 +513,12 @@ const findFile = krl.Function(["fileName", "doAutoAuth"], async function (fileNa
     }
     
     // first item: get the root directory
-    let directory = await listItems(this, [""]);
+    let baseURL = await getStorage(this, [])
+    let directory = await listItems(this, [baseURL]);
     let queue : string[][] = [];
     queue.push(directory);
     let urls : string[] = []
-    urls.push("");
+    urls.push(baseURL);
 
     // using a breadth-first search, only on directories
     // each directory, when listed, returns an array (or undefined)
@@ -570,6 +567,21 @@ const removeFolder = krl.Action(["containerURL", "doAutoAuth"], async function(c
     this.log.debug('Container deleted successfully!\n');
 });
 
+const getAllAgentAccess = krl.Function(["resourceURL"], async function(resourceURL: string) {
+    const accessByAgent : any = await universalAccess.getAgentAccessAll(resourceURL, { fetch: authFetch });
+    let agents : string[] = [];
+    for (const [agent, agentAccess] of Object.entries(accessByAgent)) {
+      console.log(`For resource::: ${resourceURL}`);
+      agents.push(agent);
+      if (agentAccess === null) {
+        console.log(`Could not load ${agent}'s access details.`);
+      } else {
+        console.log(`${agent}'s Access:: ${JSON.stringify(agentAccess)}`);
+      }
+    }
+    return agents;
+  });
+
 const grantAgentAccess = krl.Action(["resourceURL", "webID", "doAutoAuth"], async function(resourceURL : string, webID : string, doAutoAuth : Boolean = true) {
     if (doAutoAuth) {
         if (!await autoAuth(this, [])) {
@@ -579,7 +591,6 @@ const grantAgentAccess = krl.Action(["resourceURL", "webID", "doAutoAuth"], asyn
     universalAccess.setAgentAccess(
         resourceURL,       // resource  
         webID,   // agent
-        // sample: {"read":false,"write":false,"append":false,"controlRead":false,"controlWrite":false}
         { read: true, write: false },
         { fetch: authFetch }                      // fetch function from authenticated session
       ).then((agentAccess) => {
@@ -601,7 +612,7 @@ const removeAgentAccess = krl.Action(["resourceURL", "webID", "doAutoAuth"], asy
     universalAccess.setAgentAccess(
         resourceURL,       // resource  
         webID,   // agent
-        { read: false, write: false },
+        { read: false, write: false},
         { fetch: authFetch }                      // fetch function from authenticated session
       ).then((agentAccess) => {
         this.log.debug(`For resource::: ${resourceURL}`);
@@ -613,14 +624,24 @@ const removeAgentAccess = krl.Action(["resourceURL", "webID", "doAutoAuth"], asy
       });
 });
 
-const grantPublicAccess = krl.Action(["resourceURL", "doAutoAuth"], async function(resourceUrl: string, doAutoAuth : Boolean = true) {
+const getAccess = krl.Function(["resourceURL"], async function(resourceURL: string) {
+    const access = await universalAccess.getPublicAccess(resourceURL, { fetch: authFetch });
+    if (access === null) {
+        console.log("Could not load access details for this Resource.");
+    } else {
+        console.log("Returned Public Access:: ", JSON.stringify(access));
+        return JSON.stringify(access.read);
+    }
+});
+
+const grantPublicAccess = krl.Action(["resourceURL", "doAutoAuth"], async function(resourceURL: string, doAutoAuth : Boolean = true) {
     if (doAutoAuth) {
         if (!await autoAuth(this, [])) {
             throw MODULE_NAME + ":grantPublicAccess could not validate Pod access token.";
         }
     }
     universalAccess.setPublicAccess(
-        resourceUrl,  // Resource
+        resourceURL,  // Resource
         { read: true, write: false },    // Access object
         { fetch: authFetch }                 // fetch function from authenticated session
       ).then((newAccess) => {
@@ -631,14 +652,14 @@ const grantPublicAccess = krl.Action(["resourceURL", "doAutoAuth"], async functi
         }
       });
 });
-const removePublicAccess = krl.Action(["resourceURL", "doAutoAuth"], async function removeAccess(resourceUrl: string, doAutoAuth : Boolean = true) {
+const removePublicAccess = krl.Action(["resourceURL", "doAutoAuth"], async function removeAccess(resourceURL: string, doAutoAuth : Boolean = true) {
     if (doAutoAuth) {
         if (!await autoAuth(this, [])) {
             throw MODULE_NAME + ":removePublicAccess could not validate Pod access token.";
         }
     }
     universalAccess.setPublicAccess(
-        resourceUrl,  // Resource
+        resourceURL,  // Resource
         { read: false, write: false },    // Access object
         { fetch: authFetch }                 // fetch function from authenticated session
       ).then((newAccess) => {
@@ -679,8 +700,10 @@ const pods: krl.Module = {
 	getAccessTokenReceiveTime : getAccessTokenReceiveTime, //Mostly private KRL helper function, but exported since developer may want to know about the token
 
 	authenticate: authenticate,
+    getAllAgentAccess: getAllAgentAccess,
 	grantAgentAccess: grantAgentAccess,
 	removeAgentAccess: removeAgentAccess,
+    getAccess: getAccess,
 	grantPublicAccess: grantPublicAccess,
 	removePublicAccess: removePublicAccess,
 }

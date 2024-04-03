@@ -71,6 +71,11 @@ ruleset sample_app {
 		pods:removeFolder(event:attrs.get("containerURL"))
 	}
 
+	rule get_all_agent_access {
+		select when sample_app get_all_agent_access
+		send_directive(pods:getAllAgentAccess(event:attrs.get("resourceURL")))
+	}
+
 	rule grant_agent_access {
 		select when sample_app grant_agent_access
 		pods:grantAgentAccess(event:attrs.get("resourceURL"), event:attrs.get("webID"))
@@ -81,6 +86,11 @@ ruleset sample_app {
 		pods:removeAgentAccess(event:attrs.get("resourceURL"), event:attrs.get("webID"))
 	}
 	
+	rule get_access {
+		select when sample_app get_access
+		send_directive(pods:getAccess(event:attrs.get("resourceURL")))
+	}
+
 	rule grant_access {
 		select when sample_app grant_access
 		pods:grantAccess(event:attrs.get("resourceURL"))
@@ -100,6 +110,14 @@ ruleset sample_app {
 
 	rule find {
 		select when sample_app find 
-		pods:findFile(event:attrs.get("fileName"))
+		pre {
+			file = pods:findFile(event:attrs.get("fileName"))
+		}
+		send_directive(file)
+	}
+
+	rule get_storage {
+		select when sample_app get_storage
+		send_directive(pods:getStorage())
 	}
 }
