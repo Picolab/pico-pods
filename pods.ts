@@ -448,7 +448,7 @@ const copyFile = krl.Action(["fetchFileURL", "storeLocation", "doAutoAuth"],
                 });
         }
     } catch(err) {
-        console.log(err);
+        this.log.error((err as Error).message);
     };
 });
 
@@ -531,11 +531,9 @@ const findFile = krl.Function(["fileName", "doAutoAuth"], async function (fileNa
 
       // check if directory has the file
       if (dir?.includes(fileName)) {
-          console.log(url);
           return url;
       }
 
-      console.log("made it here");
       // go through each subdirectory and enqueue all of them
       if (dir != undefined) {
           for (let i = 0; i < dir?.length; i++) {
@@ -550,7 +548,6 @@ const findFile = krl.Function(["fileName", "doAutoAuth"], async function (fileNa
     }
 
     // not found
-    console.log("null");
     return null;
 });
 
