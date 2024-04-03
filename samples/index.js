@@ -237,6 +237,7 @@ async function toggleControlPanel(showDefaultButtons) {
         addButton('back', 'Back', backAction);
         addButton('deletePhoto', 'Delete photo', deletePhotoAction);
         addButton('copy', 'Copy', copyAction);
+        addButton('downloand', 'Download', downloadAction);
         addButton('grantAccessToggle', await getAccess(), grantAccessAction);
         addButton('grantAccessTo', 'Grant Access to', grantAccessToAction);
         addButton('removeAccessFrom', 'Remove Access from', removeAccessFromAction);
@@ -268,6 +269,7 @@ function addPhotoAction() {
     input.className = 'addPhotoInput'; 
     input.placeholder = 'Enter photo URL';
     input.style.width = '150px';
+    input.style.marginRight = '5px';
 
     const submitNewPhoto = () => {
         const url = input.value.trim();
@@ -309,6 +311,7 @@ function addFolderAction() {
     input.className = 'addFolderInput'; 
     input.placeholder = 'Enter folder name';
     input.style.width = '150px';
+    input.style.marginRight = '5px';
 
     const submitNewFolder = () => {
         let folderName = input.value.trim();
@@ -416,7 +419,46 @@ function deletePhotoAction() {
 }
 
 function copyAction() {
+    const copyBtn = document.getElementById('copy');
+    copyBtn.style.display = 'none'; 
 
+    // Text input for the folder URL
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.id = 'folderURLInput';
+    input.className = 'copyPhotoInput'; 
+    input.placeholder = 'Enter the folder URL';
+    input.style.width = '150px';  
+    input.style.marginRight = '5px';
+
+    input.addEventListener('keypress', async function(e) {
+        if (e.key === 'Enter') {
+            if (input.value) {
+                await copyPhoto(input.value); 
+                console.log(`Copy photo to ${input.value} successfully!`);
+                alert(`Copy photo to ${input.value} successfully!`);
+                input.remove(); 
+                copyBtn.style.display = 'inline-block'; 
+            } else {
+                input.remove(); 
+                copyBtn.style.display = 'inline-block'; 
+            }
+        }
+    });
+
+    // Insert the input field into the DOM, after the delete photo button
+    copyBtn.parentNode.insertBefore(input, copyBtn);
+    input.focus(); // Automatically focus the input field
+}
+
+function downloadAction() {
+    const currentPhotoURL = document.querySelector('.folder img').src; 
+    const link = document.createElement('a');
+    link.href = currentPhotoURL;
+    link.download = getCurrentPath().split('/').pop(); 
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
 }
 
 async function grantAccessAction() {
@@ -440,6 +482,7 @@ function grantAccessToAction() {
     input.className = 'grantAccessInput'; 
     input.placeholder = 'Enter a webID';
     input.style.width = '150px';
+    input.style.marginRight = '5px';
 
     const submitNewGrantAccessRequest = () => {
         let webID = input.value.trim();
@@ -457,7 +500,7 @@ function grantAccessToAction() {
     // Listen for the Enter key in the input field
     input.addEventListener('keypress', function(e) {
         if (e.key === 'Enter') {
-            if (input.value.trim() == '') {
+            if (!input.value.trim()) {
                 input.remove();
                 grantAccessBtn.style.display = ''; // Show the button again
             } else if (!(input.value.trim().startsWith('http://') || input.value.trim().startsWith('https://'))){
@@ -733,6 +776,32 @@ async function removeAccessFrom(webID) {
     .catch(error => {
         console.error('Error removing access:', error);
         alert(`Failed to remove access from ${webID}.`);
+    });
+}
+
+async function copyPhoto(storeLocation) {
+    if (!storeLocation.endsWith('/')) {
+        storeLocation += '/';
+    }
+    const data = {
+        fetchFileURL: getCurrentPath(),
+        storeLocation: storeLocation
+    };
+    fetch(`${getPicoURL()}1556/sample_app/copy_file`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`Copy photo failed: ${response.status}`);
+        }
+    })
+    .catch(error => {
+        console.error('Error copying photo:', error);
+        alert('Failed to copy the photo.');
     });
 }
 
