@@ -292,10 +292,10 @@ const disconnectStorage = krl.Action([], async function() {
 });
 
 function checkFileURL(fileURL : string, fileName : string) : string {
-    let standardizedURL = standardizeURL(fileURL);
-	let newFileURL = String(standardizedURL);
-	if (!fileURL.endsWith(fileName)) {
-		newFileURL = standardizedURL + fileName;
+	let newFileURL : string = fileURL;
+	if ((!fileURL.endsWith(fileName)) && 
+        (fileURL.endsWith("/") || fileURL.endsWith("\\"))) {
+		newFileURL = fileURL + fileName;
 	}
 	return newFileURL;
 }
@@ -331,6 +331,9 @@ const store = krl.Action(["originURL", "destinationURL", "fileName", "doAutoAuth
     }*/
 	
     let file : File = await getNonPodFile(this, [originURL, destinationURL, fileName, FUNCTION_NAME])
+    if (typeof fileName != "undefined") {
+        destinationURL = checkFileURL(destinationURL, fileName);
+    }
 
     //let checkedDestinationURL = checkFileURL(destinationURL, file.name);
 	this.log.debug("Destination: " + destinationURL);
@@ -365,6 +368,9 @@ const overwrite = krl.Action(["originURL", "destinationURL", "fileName", "doAuto
     }
 	
     let file = await getNonPodFile(this, [originURL, destinationURL, fileName, FUNCTION_NAME]);
+    if (typeof fileName != "undefined") {
+        destinationURL = checkFileURL(destinationURL, fileName);
+    }
 
     //let checkedDestinationURL = checkFileURL(destinationURL, file.name);
 	this.log.debug("Destination: " + destinationURL);
