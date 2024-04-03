@@ -88,16 +88,16 @@ ruleset sample_app {
 	
 	rule get_access {
 		select when sample_app get_access
-		send_directive(pods:getAccess(event:attrs.get("resourceURL")))
+		send_directive(pods:getPublicAccess(event:attrs.get("resourceURL")))
 	}
 
 	rule grant_access {
 		select when sample_app grant_access
-		pods:grantAccess(event:attrs.get("resourceURL"))
+		pods:grantPublicAccess(event:attrs.get("resourceURL"))
 	}
 	rule remove_access {
 		select when sample_app remove_access
-		pods:removeAccess(event:attrs.get("resourceURL"))
+		pods:removePublicAccess(event:attrs.get("resourceURL"))
 	}
 	
 	rule ls {

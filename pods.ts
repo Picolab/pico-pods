@@ -630,7 +630,7 @@ const removeAgentAccess = krl.Action(["resourceURL", "webID", "doAutoAuth"], asy
       });
 });
 
-const getAccess = krl.Function(["resourceURL"], async function(resourceURL: string) {
+const getPublicAccess = krl.Function(["resourceURL"], async function(resourceURL: string) {
     const access = await universalAccess.getPublicAccess(resourceURL, { fetch: authFetch });
     if (access === null) {
         console.log("Could not load access details for this Resource.");
@@ -709,7 +709,7 @@ const pods: krl.Module = {
     getAllAgentAccess: getAllAgentAccess,
 	grantAgentAccess: grantAgentAccess,
 	removeAgentAccess: removeAgentAccess,
-    getAccess: getAccess,
+    getAccess: getPublicAccess,
 	grantPublicAccess: grantPublicAccess,
 	removePublicAccess: removePublicAccess,
 }
