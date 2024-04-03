@@ -23,8 +23,7 @@ ruleset pods_test {
 	
 	rule test_store_file {
 		select when test store_file
-		if (event:attrs.get("fileName")) then
-			pods:overwrite(event:attrs.get("originURL"), event:attrs.get("destinationURL"), event:attrs.get("fileName"), event:attrs.get("doAutoAuth"))
+		pods:overwrite(event:attrs.get("originURL"), event:attrs.get("destinationURL"), event:attrs.get("fileName"), event:attrs.get("doAutoAuth"))
 	}
 
 	rule test_overwrite_file {
