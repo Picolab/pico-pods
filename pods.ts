@@ -493,11 +493,25 @@ const removeFolder = krl.Action(["containerURL"], async function(containerURL : 
     this.log.debug('Container deleted successfully!\n');
 });
 
+const getAllAgentAccess = krl.Function(["resourceURL"], async function(resourceURL: string) {
+    const accessByAgent : any = await universalAccess.getAgentAccessAll(resourceURL, { fetch: authFetch });
+    let agents : string[] = [];
+    for (const [agent, agentAccess] of Object.entries(accessByAgent)) {
+      console.log(`For resource::: ${resourceURL}`);
+      agents.push(agent);
+      if (agentAccess === null) {
+        console.log(`Could not load ${agent}'s access details.`);
+      } else {
+        console.log(`${agent}'s Access:: ${JSON.stringify(agentAccess)}`);
+      }
+    }
+    return agents;
+  });
+
 const grantAgentAccess = krl.Action(["resourceURL", "webID"], async function(resourceURL : string, webID : string) {
     universalAccess.setAgentAccess(
         resourceURL,       // resource  
         webID,   // agent
-        // sample: {"read":false,"write":false,"append":false,"controlRead":false,"controlWrite":false}
         { read: true, write: false },
         { fetch: authFetch }                      // fetch function from authenticated session
       ).then((agentAccess) => {
@@ -514,7 +528,7 @@ const removeAgentAccess = krl.Action(["resourceURL", "webID"], async function(re
     universalAccess.setAgentAccess(
         resourceURL,       // resource  
         webID,   // agent
-        { read: false, write: false },
+        { read: false, write: false},
         { fetch: authFetch }                      // fetch function from authenticated session
       ).then((agentAccess) => {
         this.log.debug(`For resource::: ${resourceURL}`);
@@ -592,6 +606,7 @@ const pods: krl.Module = {
 	getAccessTokenReceiveTime : getAccessTokenReceiveTime, //Mostly private KRL helper function, but exported since developer may want to know about the token
 
 	authenticate: authenticate,
+    getAllAgentAccess: getAllAgentAccess,
 	grantAgentAccess: grantAgentAccess,
 	removeAgentAccess: removeAgentAccess,
     getAccess: getAccess,
