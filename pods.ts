@@ -151,7 +151,7 @@ async function getBlob(originURL : string) {
     }
     return data;
 }
-async function createFileObject(data : Blob, destinationURL : string, fileName : string | undefined) : Promise<File> {
+async function createFileObject(data : Blob, destinationURL : string, fileName : string | undefined, functionName : string) : Promise<File> {
 
     //Get file name
     if (typeof fileName === "undefined") {
@@ -170,6 +170,12 @@ async function createFileObject(data : Blob, destinationURL : string, fileName :
         } else {
             fileName = fS_filename;
         }
+    }
+    if (typeof fileName === "undefined") {
+        throw MODULE_NAME + ":" + functionName + " could not define file name.";
+    }
+    if (fileName.length == 0) {
+        throw MODULE_NAME + ":" + functionName + " detected a file name of length 0. Check that the destination URL has the file name appended to the end.";
     }
     
 
@@ -225,9 +231,9 @@ const authenticate = krl.Action([], async function authenticate() {
     const { access_token: accessToken } = response_json;
 	const { expires_in : expiresIn } = response_json;
 	const token_now = getCurrentTimeInSeconds();
-	setAccessToken(this, [accessToken]);
-	setAccessTokenReceiveTime(this, [token_now]);
-	setAccessTokenValidDuration(this, [expiresIn]);
+	await setAccessToken(this, [accessToken]);
+	await setAccessTokenReceiveTime(this, [token_now]);
+	await setAccessTokenValidDuration(this, [expiresIn]);
 	this.log.debug("Access Token expires in " + String(expiresIn) + " seconds.");
 
     authFetch = await buildAuthenticatedFetch(accessToken, { dpopKey });
@@ -243,7 +249,7 @@ const autoAuth = krl.Action([], async function() : Promise<Boolean> {
     if (is_valid) {
         return true;
     }
-    authenticate(this, []);
+    await authenticate(this, []);
     is_valid = await hasValidAccessToken(this, []);
     if (is_valid) {
         return true;
@@ -300,10 +306,22 @@ function checkFileURL(fileURL : string, fileName : string) : string {
  * @param destinationURL A required parameter for the location in the Pod to store the file in. Must be an absolute url.
  * @param fileName An optional parameter for setting the file's name when it is stored in the Pod storage.
  */
-const store = krl.Action(["originURL", "destinationURL", "fileName"], async function(originURL : string, destinationURL : string, fileName : string | undefined = undefined) {
+const store = krl.Action(["originURL", "destinationURL", "fileName", "doAutoAuth"], 
+                        async function(
+                            originURL : string, 
+                            destinationURL : string, 
+                            fileName : string | undefined = undefined,
+                            doAutoAuth : Boolean = true
+                            ) {
+    const FUNCTION_NAME = arguments.callee.name;
 	if (!await isStorageConnected(this, [])) {
-		throw MODULE_NAME + ":store needs a Pod to be connected.";
+		throw MODULE_NAME + ":" + FUNCTION_NAME + " needs a Pod to be connected.";
 	}
+    if (doAutoAuth) {
+        if (!await autoAuth(this, [])) {
+            throw MODULE_NAME + ":" + FUNCTION_NAME + " could not validate Pod access token.";
+        }
+    }
 	
 	//Used to check file size prior to loading a file into memory
 	//Considered unnecessary
@@ -312,7 +330,7 @@ const store = krl.Action(["originURL", "destinationURL", "fileName"], async func
         throw "The file size exceed 500 MB";
     }*/
 	
-    let file : File = await getNonPodFile(this, [originURL, destinationURL, fileName])
+    let file : File = await getNonPodFile(this, [originURL, destinationURL, fileName, FUNCTION_NAME])
 
     //let checkedDestinationURL = checkFileURL(destinationURL, file.name);
 	this.log.debug("Destination: " + destinationURL);
@@ -329,12 +347,24 @@ const store = krl.Action(["originURL", "destinationURL", "fileName"], async func
         this.log.error("Error uploading file: ", error.message);
     });
 });
-const overwrite = krl.Action(["originURL", "destinationURL", "fileName"], async function(originURL : string, destinationURL : string, fileName : string | undefined = undefined) {
+const overwrite = krl.Action(["originURL", "destinationURL", "fileName", "doAutoAuth"], 
+                            async function(
+                                originURL : string, 
+                                destinationURL : string, 
+                                fileName : string | undefined = undefined,
+                                doAutoAuth : Boolean = true
+                                ) {
+    const FUNCTION_NAME = arguments.callee.name;
 	if (!await isStorageConnected(this, [])) {
-		throw MODULE_NAME + ":overwrite needs a Pod to be connected.";
+		throw MODULE_NAME + ":" + FUNCTION_NAME + " needs a Pod to be connected.";
 	}
+    if (doAutoAuth) {
+        if (!await autoAuth(this, [])) {
+            throw MODULE_NAME + ":" + FUNCTION_NAME + " could not validate Pod access token.";
+        }
+    }
 	
-    let file = await getNonPodFile(this, [originURL, destinationURL, fileName]);
+    let file = await getNonPodFile(this, [originURL, destinationURL, fileName, FUNCTION_NAME]);
 
     //let checkedDestinationURL = checkFileURL(destinationURL, file.name);
 	this.log.debug("Destination: " + destinationURL);
@@ -351,66 +381,84 @@ const overwrite = krl.Action(["originURL", "destinationURL", "fileName"], async 
         this.log.error("Error uploading file: ", error.message);
     });
 });
-const getNonPodFile = krl.Action(["originURL", "destinationURL", "fileName"], async function(originURL : string, destinationURL : string, fileName : string | undefined) : Promise<File> {
+const getNonPodFile = krl.Action(["originURL", "destinationURL", "fileName", "functionName"], 
+                                async function(originURL : string, destinationURL : string, fileName : string | undefined, functionName : string) : Promise<File> {
     let file : File;
     let blob : Blob = await getBlob(originURL);
-    file = await createFileObject(blob, destinationURL, fileName);
+    file = await createFileObject(blob, destinationURL, fileName, functionName);
 
 	return file;
 });
 
-const removeFile = krl.Action(["fileURL"], async function(fileURL : string) {
+const removeFile = krl.Action(["fileURL", "doAutoAuth"], async function(fileURL : string,
+                                                          doAutoAuth : Boolean = true) {
+    if (doAutoAuth) {
+        if (!await autoAuth(this, [])) {
+            throw MODULE_NAME + ":removeFile could not validate Pod access token.";
+        }
+    }
     await deleteFile(fileURL, { fetch: authFetch });
     this.log.debug('File deleted successfully!\n');
 });
 
-const copyFile = krl.Action(["fetchFileURL", "storeLocation"], 
-							 async function(fetchFileURL : string, storeLocation : string) {
-  try {
-    const file = await getFile(
-      fetchFileURL,               // File in Pod to Read
-      { fetch: authFetch }       // fetch from authenticated session
-    );
-    console.log( `Fetched a ${getContentType(file)} file from ${getSourceUrl(file)}.`);
-    console.log(`The file is ${isRawData(file) ? "not " : ""}a dataset.`);
+const copyFile = krl.Action(["fetchFileURL", "storeLocation", "doAutoAuth"], 
+							 async function(fetchFileURL : string, storeLocation : string, doAutoAuth : Boolean = true) {
+    if (doAutoAuth) {
+        if (!await autoAuth(this, [])) {
+            throw MODULE_NAME + ":copyFile could not validate Pod access token.";
+        }
+    }
+    try {
+        const file = await getFile(
+        fetchFileURL,               // File in Pod to Read
+        { fetch: authFetch }       // fetch from authenticated session
+        );
+        this.log.debug( `Fetched a ${getContentType(file)} file from ${getSourceUrl(file)}.`);
+        this.log.debug(`The file is ${isRawData(file) ? "not " : ""}a dataset.`);
 
-    // get the file name
-    let filename : string | undefined = fetchFileURL.split('/').pop()
-    // get the URL
-    let url = storeLocation + filename;
+        // get the file name
+        let filename : string | undefined = fetchFileURL.split('/').pop()
+        // get the URL
+        let url = storeLocation + filename;
 
-    if (url.startsWith('http://') || url.startsWith('https://')) {
+        if (url.startsWith('http://') || url.startsWith('https://')) {
 
-      overwriteFile(
-        url,
-        file,
-        { fetch: authFetch }
-      )
-      .then(() => {
-        console.log(`File copied to ${storeLocation} successfully!\n`);
-      })
-      .catch(error => {
-        console.error("Error copying file:", error);
-      });
-      } else {
-        const arrayBuffer = await file.arrayBuffer();
-        const buffer = Buffer.from(arrayBuffer);
-	    
-        // Writing the buffer to a file
-        fs.writeFile(url, buffer, (err : Error | null) => {
-          if (err) {
-            console.error('Failed to save the file:', err);
-          } else {
-            console.log('File saved successfully.');
-          }
-        });
-      }
-  } catch (err) {
-    console.log(err);
-  }
+            overwriteFile(
+                url,
+                file,
+                { fetch: authFetch }
+            )
+            .then(() => {
+                this.log.debug(`File copied to ${storeLocation} successfully!\n`);
+            })
+            .catch(error => {
+                this.log.error("Error copying file:", error);
+            });
+            } else {
+                const arrayBuffer = await file.arrayBuffer();
+                const buffer = Buffer.from(arrayBuffer);
+                
+                // Writing the buffer to a file
+                fs.writeFile(url, buffer, (err : Error | null) => {
+                if (err) {
+                    this.log.error('Failed to save the file:', err);
+                } else {
+                    this.log.debug('File saved successfully.');
+                }
+                });
+        }
+    } catch(err) {
+        console.log(err);
+    };
 });
 
-const pods_fetch = krl.Function(["fileURL"], async function(fileURL : string) {
+const pods_fetch = krl.Function(["fileURL", "doAutoAuth"], async function(fileURL : string, doAutoAuth : Boolean = true) {
+    if (doAutoAuth) {
+        this.log.debug("Automatically authenticating...");
+        if (!await autoAuth(this, [])) {
+            throw MODULE_NAME + ":fetch could not validate Pod access token.";
+        }
+    }
     let file = await getFile(
         fileURL,
         { fetch: authFetch }
@@ -425,12 +473,18 @@ const pods_fetch = krl.Function(["fileURL"], async function(fileURL : string) {
 	return dataUrl;
 });
 
-const listItems = krl.Function(["fileURL"], async function(fileURL : string) {
+const listItems = krl.Function(["fileURL", "doAutoAuth"], async function(fileURL : string, doAutoAuth : Boolean = true) {
+    if (doAutoAuth) {
+        if (!await autoAuth(this, [])) {
+            throw MODULE_NAME + ":listItems could not validate Pod access token.";
+        }
+    }
+
     let baseURL = await getStorage(this, []);
     let newURL = baseURL + fileURL;
 
     if ((fileURL != '') && (!fileURL.endsWith('/'))) {
-    	throw MODULE_NAME + ": listItems can only be called on containers. Ensure that containers have their trailing slash."
+    	throw MODULE_NAME + ":listItems can only be called on containers. Ensure that containers have their trailing slash."
     }
     
     let dataset;
@@ -455,7 +509,13 @@ const listItems = krl.Function(["fileURL"], async function(fileURL : string) {
     }
 });
 
-const findFile = krl.Function(["fileName"], async function (fileName : string) {
+const findFile = krl.Function(["fileName", "doAutoAuth"], async function (fileName : string, doAutoAuth : Boolean = true) {
+    if (doAutoAuth) {
+        if (!await autoAuth(this, [])) {
+            throw MODULE_NAME + ":findFile could not validate Pod access token.";
+        }
+    }
+    
     // first item: get the root directory
     let directory = await listItems(this, [""]);
     let queue : string[][] = [];
@@ -494,16 +554,31 @@ const findFile = krl.Function(["fileName"], async function (fileName : string) {
     return null;
 });
 
-const createFolder = krl.Action(["containerURL"], async function(containerURL : string) {
+const createFolder = krl.Action(["containerURL", "doAutoAuth"], async function(containerURL : string, doAutoAuth : Boolean = true) {
+    if (doAutoAuth) {
+        if (!await autoAuth(this, [])) {
+            throw MODULE_NAME + ":createFolder could not validate Pod access token.";
+        }
+    }
     await createContainerAt(containerURL, { fetch: authFetch});
     this.log.debug('Container created successfully!\n');
 });
-const removeFolder = krl.Action(["containerURL"], async function(containerURL : string) {
+const removeFolder = krl.Action(["containerURL", "doAutoAuth"], async function(containerURL : string, doAutoAuth : Boolean = true) {
+    if (doAutoAuth) {
+        if (!await autoAuth(this, [])) {
+            throw MODULE_NAME + ":removeFolder could not validate Pod access token.";
+        }
+    }
     await deleteContainer(containerURL, { fetch: authFetch});
     this.log.debug('Container deleted successfully!\n');
 });
 
-const grantAgentAccess = krl.Action(["resourceURL", "webID"], async function(resourceURL : string, webID : string) {
+const grantAgentAccess = krl.Action(["resourceURL", "webID", "doAutoAuth"], async function(resourceURL : string, webID : string, doAutoAuth : Boolean = true) {
+    if (doAutoAuth) {
+        if (!await autoAuth(this, [])) {
+            throw MODULE_NAME + ":grantAgentAccess could not validate Pod access token.";
+        }
+    }
     universalAccess.setAgentAccess(
         resourceURL,       // resource  
         webID,   // agent
@@ -520,7 +595,12 @@ const grantAgentAccess = krl.Action(["resourceURL", "webID"], async function(res
       });
 });
 
-const removeAgentAccess = krl.Action(["resourceURL", "webID"], async function(resourceURL : string, webID : string) {
+const removeAgentAccess = krl.Action(["resourceURL", "webID", "doAutoAuth"], async function(resourceURL : string, webID : string, doAutoAuth : Boolean = true) {
+    if (doAutoAuth) {
+        if (!await autoAuth(this, [])) {
+            throw MODULE_NAME + ":removeAgentAccess could not validate Pod access token.";
+        }
+    }
     universalAccess.setAgentAccess(
         resourceURL,       // resource  
         webID,   // agent
@@ -536,7 +616,12 @@ const removeAgentAccess = krl.Action(["resourceURL", "webID"], async function(re
       });
 });
 
-const grantAccess = krl.Action(["resourceURL"], async function(resourceUrl: string) {
+const grantPublicAccess = krl.Action(["resourceURL", "doAutoAuth"], async function(resourceUrl: string, doAutoAuth : Boolean = true) {
+    if (doAutoAuth) {
+        if (!await autoAuth(this, [])) {
+            throw MODULE_NAME + ":grantPublicAccess could not validate Pod access token.";
+        }
+    }
     universalAccess.setPublicAccess(
         resourceUrl,  // Resource
         { read: true, write: false },    // Access object
@@ -549,7 +634,12 @@ const grantAccess = krl.Action(["resourceURL"], async function(resourceUrl: stri
         }
       });
 });
-const removeAccess = krl.Action(["resourceURL"], async function removeAccess(resourceUrl: string) {
+const removePublicAccess = krl.Action(["resourceURL", "doAutoAuth"], async function removeAccess(resourceUrl: string, doAutoAuth : Boolean = true) {
+    if (doAutoAuth) {
+        if (!await autoAuth(this, [])) {
+            throw MODULE_NAME + ":removePublicAccess could not validate Pod access token.";
+        }
+    }
     universalAccess.setPublicAccess(
         resourceUrl,  // Resource
         { read: false, write: false },    // Access object
@@ -594,8 +684,8 @@ const pods: krl.Module = {
 	authenticate: authenticate,
 	grantAgentAccess: grantAgentAccess,
 	removeAgentAccess: removeAgentAccess,
-	grantAccess: grantAccess,
-	removeAccess: removeAccess,
+	grantPublicAccess: grantPublicAccess,
+	removePublicAccess: removePublicAccess,
 }
 
 export default pods;
