@@ -313,7 +313,7 @@ const store = krl.Action(["originURL", "destinationURL", "fileName", "doAutoAuth
                             fileName : string | undefined = undefined,
                             doAutoAuth : Boolean = true
                             ) {
-    const FUNCTION_NAME = arguments.callee.name;
+    const FUNCTION_NAME = "store";
 	if (!await isStorageConnected(this, [])) {
 		throw MODULE_NAME + ":" + FUNCTION_NAME + " needs a Pod to be connected.";
 	}
@@ -357,7 +357,7 @@ const overwrite = krl.Action(["originURL", "destinationURL", "fileName", "doAuto
                                 fileName : string | undefined = undefined,
                                 doAutoAuth : Boolean = true
                                 ) {
-    const FUNCTION_NAME = arguments.callee.name;
+    const FUNCTION_NAME = "overwrite";
 	if (!await isStorageConnected(this, [])) {
 		throw MODULE_NAME + ":" + FUNCTION_NAME + " needs a Pod to be connected.";
 	}
