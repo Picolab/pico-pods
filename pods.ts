@@ -245,6 +245,7 @@ const authenticate = krl.Action([], async function authenticate() {
  * If the token is still failing validation after an authenticate() call, the function returns a false.
  */
 const autoAuth = krl.Action([], async function() : Promise<Boolean> {
+    this.log.debug("Automatically authenticating...");
     let is_valid = await hasValidAccessToken(this, []);
     if (is_valid) {
         return true;
