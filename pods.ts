@@ -175,7 +175,7 @@ async function createFileObject(data : Blob, destinationURL : string, fileName :
         throw MODULE_NAME + ":" + functionName + " could not define file name.";
     }
     if (fileName.length == 0) {
-        throw MODULE_NAME + ":" + functionName + " detected a file name of length 0. Check that the destination URL has the file name appended to the end.";
+        throw MODULE_NAME + ":" + functionName + " detected a file name of length 0.";
     }
     
 
