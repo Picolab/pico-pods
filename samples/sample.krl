@@ -71,6 +71,11 @@ ruleset sample_app {
 		pods:removeFolder(event:attrs.get("containerURL"))
 	}
 
+	rule get_all_agent_access {
+		select when sample_app get_all_agent_access
+		send_directive(pods:getAllAgentAccess(event:attrs.get("resourceURL")))
+	}
+
 	rule grant_agent_access {
 		select when sample_app grant_agent_access
 		pods:grantAgentAccess(event:attrs.get("resourceURL"), event:attrs.get("webID"))
