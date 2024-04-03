@@ -6,7 +6,7 @@ document.addEventListener("DOMContentLoaded", async function() {
     
     // Set default photo
     storageURL = await getStorage();
-    setCurrentPath('');
+    setCurrentPath(storageURL);
 
     // Show all items in the root storage URL
     fetchAndDisplayItems();
@@ -176,7 +176,7 @@ async function fetchAndDisplayItems(folderPath = storageURL, goBack = false) {
 }
 
 // Function to create HTML for an item
-function createItemHTML(itemName, url) {
+function createItemHTML(itemName, dataURL) {
     const itemType = getItemType(itemName);
     let src = '';
     let altText = '';
@@ -189,9 +189,9 @@ function createItemHTML(itemName, url) {
             onClickAttribute = `onclick="fetchAndDisplayItems('${getCurrentPath() + itemName}')"`;
             break;
         case 'photo':
-            src = url; 
+            src = dataURL; 
             altText = 'Photo';
-            onClickAttribute = `onclick="displayFullSizePhoto('${url}', '${itemName}')"`;
+            onClickAttribute = `onclick="displayFullSizePhoto('${dataURL}', '${getCurrentPath() + itemName}')"`;
             break;
         case 'other':
             src = 'file.png'; 
@@ -205,11 +205,11 @@ function createItemHTML(itemName, url) {
             </div>`;
 }
 
-function displayFullSizePhoto(url, itemName) {
+function displayFullSizePhoto(dataURL, pathURL) {
     const folderDiv = document.querySelector('.folder');
-    folderDiv.innerHTML = `<img src="${url}" style="max-width: 100%; max-height: 100%;">`; 
+    folderDiv.innerHTML = `<img src="${dataURL}" style="max-width: 100%; max-height: 100%;">`; 
     lastURL.push(getCurrentPath());
-    setCurrentPath(getCurrentPath() + itemName);
+    setCurrentPath(pathURL);
     displayCurrentPath(getCurrentPath());
     toggleControlPanel(false); 
 }
@@ -595,7 +595,8 @@ async function search() {
         if (path == null) {
             alert("File not found! Please make sure the file name is spelled correctly and the file extension is correct.")
         } else {
-            displayFullSizePhoto(path, path);
+            const dataURL = await getDataURL(path);
+            displayFullSizePhoto(dataURL, path);
         }
     } catch (error) {
         console.log("error in search: " + error);
@@ -621,9 +622,9 @@ async function addFolder(folderName) {
     });
 }
 
-async function getDataURL(item) {
+async function getDataURL(url) {
     try {
-        const event = `${getPicoURL()}1556/sample_app/fetch_file?fileURL=${getCurrentPath() + item}`;
+        const event = `${getPicoURL()}1556/sample_app/fetch_file?fileURL=${url}`;
         const response = await fetch(event);
         if (!response.ok) {
             throw new Error(`Fetch file failed: ${response.status}`);
@@ -638,7 +639,7 @@ async function getDataURL(item) {
 async function prefetchDataURLs(items) {
     const urlPromises = items.map(item => {
         if (getItemType(item) === 'photo') {
-            return getDataURL(item).then(url => ({ itemName: item, url }));
+            return getDataURL(getCurrentPath() + item).then(url => ({ itemName: item, url }));
         }
         return Promise.resolve({ itemName: item, url: undefined });
     });
