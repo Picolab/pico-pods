@@ -710,7 +710,7 @@ const pods: krl.Module = {
     getAllAgentAccess: getAllAgentAccess,
 	grantAgentAccess: grantAgentAccess,
 	removeAgentAccess: removeAgentAccess,
-    getAccess: getPublicAccess,
+    getPublicAccess: getPublicAccess,
 	grantPublicAccess: grantPublicAccess,
 	removePublicAccess: removePublicAccess,
 }
