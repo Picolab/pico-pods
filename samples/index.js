@@ -466,12 +466,12 @@ async function grantAccessAction() {
     if (access == 'Private') {
         grantAccess(getCurrentPath());
         document.getElementById('grantAccessToggle').textContent = 'Public';
-        console.log(`${url} is now public.`)
+        console.log(`${getCurrentPath()} is now public.`)
         alert('The photo is now public!');
     } else {
         removeAccess(getCurrentPath());
         document.getElementById('grantAccessToggle').textContent = 'Private';
-        console.log(`${url} is now private.`)
+        console.log(`${getCurrentPath()} is now private.`)
         alert('The photo is now private!');
     }
 }
