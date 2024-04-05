@@ -1,4 +1,3 @@
-let pod = true;
 let lastURL = [];
 let storageURL;
 
@@ -8,17 +7,20 @@ document.addEventListener("DOMContentLoaded", async function() {
     storageURL = await getStorage();
     if (storageURL === null) {
         storageURL = '';
-        toggleDetachAttachButtons();
+        toggleDetachAttachButtons(false);
     }
     else{
         setCurrentPath(storageURL);
 
         // Show all items in the root storage URL
         fetchAndDisplayItems(getCurrentPath());
+        // Show primary control panel
+        toggleControlPanel(true);
+        const detachPodButton = document.getElementById('detachPod');
+        detachPodButton.style.display = 'inline-block';
+
     }
 
-    // Show primary control panel
-    toggleControlPanel(true);
 
     // Modal attach button listener
     const attachForm = document.getElementById('loginForm');
@@ -52,6 +54,7 @@ document.addEventListener("DOMContentLoaded", async function() {
             console.log(response.json());
             const modal = document.getElementById('myModal');
             modal.style.display = 'none';
+            fetchAndDisplayItems(storageURL);
         })
         .catch(error => {
             console.error('Error:', error);
@@ -74,13 +77,12 @@ async function attach(event) {
     window.location.href = 'pod.html';
 }
 
-function toggleDetachAttachButtons() {
+function toggleDetachAttachButtons(pod) {
     const detachPodButton = document.getElementById('detachPod');
     const attachPodButton = document.getElementById('attachPod');
     
     if (pod) {
         let pico = getPicoURL();
-        pod = false;
         detachPodButton.style.display = 'none';
         attachPodButton.style.display = 'inline-block';
         fetch(`${pico}1556/sample_app/detach_storage`)
@@ -89,13 +91,16 @@ function toggleDetachAttachButtons() {
                 throw new Error(`HTTP error! Status: ${response.status}`);
             }
             console.log(response.json());
+            const folderDiv = document.querySelector('.folder');
+            folderDiv.innerHTML = ''; // Clear current contents
+            setCurrentPath('');
+            displayCurrentPath('');
         })
     } else {
-        pod = true;
-        const modal = document.getElementById('myModal');
-        modal.style.display = 'block';
         detachPodButton.style.display = 'inline-block';
         attachPodButton.style.display = 'none';
+        const modal = document.getElementById('myModal');
+        modal.style.display = 'block';
     }
 }
 
