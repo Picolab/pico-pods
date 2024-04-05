@@ -380,7 +380,7 @@ function addPhotoAction() {
             addPhoto(url, filename).then(() => {
                 input.remove(); // Remove the input field
                 addPhotoBtn.style.display = ''; // Show the button again
-                fetchAndDisplayItems(getCurrentPath()); // Refresh the contents of the folder
+                fetchAndDisplayItems(getCurrentPath(), true); // Refresh the contents of the folder
             })
         }
     };
@@ -895,7 +895,7 @@ async function setUpMyPhotosFolder() {
         fetchAndDisplayItems(photosFolderURL);
     } catch (error) {
         console.error("Failed to setup photos' folder:", error);
-        alert("Failed to setup photos. Please check the console log.");
+        alert("Failed to setup photos' folder. Please check the console log.");
     }
 }
 
