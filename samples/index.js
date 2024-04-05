@@ -4,12 +4,18 @@ let storageURL;
 
 document.addEventListener("DOMContentLoaded", async function() {
     
-    // Set the root path
+    // Set default photo
     storageURL = await getStorage();
-    setCurrentPath(storageURL);
+    if (storageURL === null) {
+        storageURL = '';
+        toggleDetachAttachButtons();
+    }
+    else{
+        setCurrentPath(storageURL);
 
-    // Set the default photo path to a folder called 'myPhotos'
-    setUpMyPhotosFolder();
+        // Show all items in the root storage URL
+        fetchAndDisplayItems(getCurrentPath());
+    }
 
     // Show primary control panel
     toggleControlPanel(true);
@@ -277,9 +283,9 @@ function addPhotoAction() {
         if (url) {
             console.log(`Adding file from: ${url}`); 
             addPhoto(url, filename).then(() => {
-                alert('File added successfully!');
                 input.remove(); // Remove the input field
                 addPhotoBtn.style.display = ''; // Show the button again
+                fetchAndDisplayItems(getCurrentPath()); // Refresh the contents of the folder
             })
         }
     };
@@ -318,7 +324,6 @@ function addFolderAction() {
         if (folderName) {
             console.log(`Adding folder: ${folderName}`); 
             addFolder(folderName).then(() => {
-                alert('Folder added successfully!');
                 input.remove(); // Remove the input field
                 addFolderBtn.style.display = ''; // Show the button again
             })
@@ -364,7 +369,6 @@ async function deleteFolderAction() {
         if (!deleteResponse.ok) {
             throw new Error(`Delete folder failed: ${response.status}`);
         }
-        alert('Folder deleted successfully!');
         fetchAndDisplayItems(lastURL.pop(), true);
     } catch (error) {
         console.error('Error deleting the folder:', error);
@@ -392,10 +396,10 @@ async function handleFileSelect(event) {
             if (!response.ok) {
                 throw new Error('Network response was not ok');
             }
-
-            // Success feedback
-            console.log('File uploaded successfully');
-            alert('File uploaded successfully');
+            else {
+                // Success feedback
+                console.log('File uploaded successfully');
+            }
         } catch (error) {
             console.error('Error uploading file:', error);
         }
@@ -467,12 +471,10 @@ async function grantAccessAction() {
         grantAccess(getCurrentPath());
         document.getElementById('grantAccessToggle').textContent = 'Public';
         console.log(`${getCurrentPath()} is now public.`)
-        alert('The photo is now public!');
     } else {
         removeAccess(getCurrentPath());
         document.getElementById('grantAccessToggle').textContent = 'Private';
         console.log(`${getCurrentPath()} is now private.`)
-        alert('The photo is now private!');
     }
 }
 
