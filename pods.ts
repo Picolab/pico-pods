@@ -39,9 +39,9 @@ const CLIENT_ID_ENT_NAME : string = "__pods_clientID";
 const CLIENT_SECRET_ENT_NAME : string = "__pods_clientSecret";
 const TOKEN_URL_ENT_NAME : string = "__pods_tokenURL";
 let authFetch : (typeof fetch);
-const ACCESS_TOKEN_ENT_NAME : string = "__pods_accessToken";
-const ACCESS_TOKEN_RECEIVE_TIME_ENT_NAME : string = "__pods_accessTokenReceiveTime"
-const ACCESS_TOKEN_VALID_DURATION_ENT_NAME : string = "__pods_accessTokenValidDuration"
+let accessToken : string | undefined;
+let accessTokenReceiveTime : number | undefined;
+let accessTokenValidDuration : number | undefined;
 
 /**
  * Standardizes URLs by checking for slashes at the start and end of URLs, 
@@ -92,22 +92,22 @@ const setRefreshTokenURL = krl.Action(["new_URL"], async function(new_URL : stri
 	this.rsCtx.putEnt(TOKEN_URL_ENT_NAME, new_URL);
 });
 const getAccessToken = krl.Function([], async function() : Promise<string | undefined> {
-	return this.rsCtx.getEnt(ACCESS_TOKEN_ENT_NAME);
+	return accessToken;
 });
 const setAccessToken = krl.Action(["new_Token"], async function(new_Token : string | undefined) {
-	this.rsCtx.putEnt(ACCESS_TOKEN_ENT_NAME, new_Token);
+	accessToken = new_Token;
 });
 const getAccessTokenReceiveTime = krl.Function([], async function() : Promise<number | undefined> {
-	return this.rsCtx.getEnt(ACCESS_TOKEN_RECEIVE_TIME_ENT_NAME);
+	return accessTokenReceiveTime
 });
 const setAccessTokenReceiveTime = krl.Action(["new_obj"], async function(new_obj : number | undefined) {
-	this.rsCtx.putEnt(ACCESS_TOKEN_RECEIVE_TIME_ENT_NAME, new_obj);
+	accessTokenReceiveTime = new_obj;
 });
 const getAccessTokenValidDuration = krl.Function([], async function() : Promise<number | undefined> {
-	return this.rsCtx.getEnt(ACCESS_TOKEN_VALID_DURATION_ENT_NAME);
+	return accessTokenValidDuration;
 });
 const setAccessTokenValidDuration = krl.Action(["new_obj"], async function(new_obj : number | undefined) {
-	this.rsCtx.putEnt(ACCESS_TOKEN_VALID_DURATION_ENT_NAME, new_obj);
+	accessTokenValidDuration = new_obj;
 });
 
 function getCurrentTimeInSeconds() : number {
