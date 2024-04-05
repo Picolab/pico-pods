@@ -13,7 +13,10 @@ document.addEventListener("DOMContentLoaded", async function() {
         setCurrentPath(storageURL);
 
         // Show all items in the root storage URL
-        fetchAndDisplayItems(getCurrentPath());
+        // fetchAndDisplayItems(getCurrentPath());
+
+        // Set the default photo path to a folder called 'myPhotos'
+        setUpMyPhotosFolder();
         // Show primary control panel
         toggleControlPanel(true);
         const detachPodButton = document.getElementById('detachPod');
@@ -66,7 +69,24 @@ document.addEventListener("DOMContentLoaded", async function() {
     fileInput.id = 'fileInput';
     fileInput.style.display = 'none';
     document.body.appendChild(fileInput);
-    fileInput.addEventListener('change', handleFileSelect);
+    fileInput.addEventListener('change', function(event) {
+        const file = event.target.files[0];
+        if (file) {
+
+            const filename = file.name;
+            // Create a FileReader to read the file
+            const reader = new FileReader();
+            
+            reader.onloadend = function() {
+                // reader.result contains the data URL
+                const dataURL = reader.result;
+                addPhoto(dataURL, filename)
+            };
+            
+            // Read the file as a data URL
+            reader.readAsDataURL(file);
+        }
+    });
 });
 
 async function attach(event) {
@@ -240,10 +260,9 @@ async function toggleControlPanel(showDefaultButtons) {
     controlPanel.innerHTML = ''; // Clear existing buttons
     if (showDefaultButtons) {
         addButton('back', 'Back', backAction);
-        addButton('addPhoto', 'Add photo', addPhotoAction);
+        addButton('addPhoto', 'Add photo', addPhotoAction2);
         addButton('addFolder', 'Add folder', addFolderAction);
         addButton('deleteFolder', 'Delete folder', deleteFolderAction);
-        addButton('sample', 'sample', sampleAction);
     } else {
         addButton('back', 'Back', backAction);
         addButton('deletePhoto', 'Delete photo', deletePhotoAction);
@@ -268,6 +287,77 @@ function backAction() {
         fetchAndDisplayItems(lastURL.pop(), true);
     }
     toggleControlPanel(true);
+}
+
+function addPhotoAction2() {
+    const addPhotoBtn = document.getElementById('addPhoto');
+    const backBtn = document.getElementById('back');
+    addPhotoBtn.style.display = 'none'; // Hide the button
+
+    const container = document.createElement('div');
+    container.id = 'webIDSelectionContainer';
+    container.style.display = 'inline-flex'; 
+    container.style.alignItems = 'center';
+    container.style.gap = '5px'; 
+    container.style.marginRight = '5px';
+
+    // Add from local button
+    const addFromLocalButton = document.createElement('button');
+    addFromLocalButton.textContent = 'From local';
+    addFromLocalButton.onclick = function() {
+        document.getElementById('fileInput').click();
+    }
+
+    // Add from internet button
+    const addFromInternetButton = document.createElement('button');
+    addFromInternetButton.textContent = 'From internet';
+    addFromInternetButton.onclick = function() {
+        addFromInternetButton.style.display = 'none';
+
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.id = 'photoURLInput';
+        input.className = 'addPhotoInput'; 
+        input.placeholder = 'Enter photo URL';
+        input.style.width = '150px';
+        input.style.marginRight = '5px';
+
+        const submitNewPhoto = () => {
+            const url = input.value.trim();
+            const filename = url.split('/').pop();
+            if (url) {
+                console.log(`Adding file from: ${url}`); 
+                addPhoto(url, filename).then(() => {
+                    input.remove(); // Remove the input field
+                    container.remove(); // Remove the two extra buttons
+                    addPhotoBtn.style.display = ''; // Show the add photo button again
+                })
+            }
+        };
+    
+        // Listen for the Enter key in the input field
+        input.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                if (input.value.trim() == '') {
+                    input.remove(); // Remove the input field
+                    container.remove(); // Remove the two extra buttons
+                    addPhotoBtn.style.display = ''; // Show the add photo button again
+                } else {
+                    submitNewPhoto();
+                }
+            }
+        });
+    
+        // Insert the input field into the DOM, before the add from local button
+        addFromLocalButton.parentNode.insertBefore(input, addFromLocalButton);
+        addFromLocalButton.style.marginTop = '9px';
+        input.focus(); // Automatically focus the input field
+    };
+
+    container.appendChild(addFromInternetButton);
+    container.appendChild(addFromLocalButton);
+
+    backBtn.parentNode.insertBefore(container, backBtn.nextSibling);
 }
 
 function addPhotoAction() {
@@ -377,37 +467,7 @@ async function deleteFolderAction() {
         fetchAndDisplayItems(lastURL.pop(), true);
     } catch (error) {
         console.error('Error deleting the folder:', error);
-    }
-}
-
-function sampleAction() {
-    document.getElementById('fileInput').click();
-}
-
-// Handle file selection and upload
-async function handleFileSelect(event) {
-    const file = event.target.files[0];
-    if (file) {
-        console.log(file);
-        const formData = new FormData();
-        formData.append('file', file); 
-
-        try {
-            const response = await fetch('YOUR_API_ENDPOINT', {
-                method: 'POST',
-                body: formData,
-            });
-
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
-            else {
-                // Success feedback
-                console.log('File uploaded successfully');
-            }
-        } catch (error) {
-            console.error('Error uploading file:', error);
-        }
+        alert('Failed to delete the folder. Please check the console log.');
     }
 }
 
@@ -423,7 +483,7 @@ function deletePhotoAction() {
     })
     .catch(error => {
         console.error('Error deleting photo:', error);
-        alert('Failed to delete the photo.');
+        alert('Failed to delete the photo. Please check the console log.');
     });
 }
 
@@ -474,12 +534,8 @@ async function grantAccessAction() {
     const access = document.getElementById('grantAccessToggle').textContent;
     if (access == 'Private') {
         grantAccess(getCurrentPath());
-        document.getElementById('grantAccessToggle').textContent = 'Public';
-        console.log(`${getCurrentPath()} is now public.`)
     } else {
         removeAccess(getCurrentPath());
-        document.getElementById('grantAccessToggle').textContent = 'Private';
-        console.log(`${getCurrentPath()} is now private.`)
     }
 }
 
@@ -629,7 +685,7 @@ async function addFolder(folderName) {
     })
     .catch(error => {
         console.error('Error adding folder:', error);
-        alert('Failed to add the folder.');
+        alert('Failed to add the folder. Please check the console log.');
     });
 }
 
@@ -686,7 +742,7 @@ async function addPhoto(url, filename) {
     })
     .catch(error => {
         console.error('Error adding photo:', error);
-        alert('Failed to add the photo.');
+        alert('Failed to add the photo. Please check the console log.');
     });
 }
 
@@ -697,10 +753,12 @@ async function grantAccess(url) {
         if (!response.ok) {
             throw new Error(`Make photo public failed: ${response.status}`);
         }
+        document.getElementById('grantAccessToggle').textContent = 'Public';
+        console.log(`${getCurrentPath()} is now public.`)
     })
     .catch(error => {
         console.error('Error making photo public:', error);
-        alert('Failed to make the photo public.');
+        alert('Failed to make the photo public. Please check the console log.');
     })
 }
 
@@ -711,10 +769,12 @@ async function removeAccess(url) {
         if (!response.ok) {
             throw new Error(`Make photo private failed: ${response.status}`);
         }
+        document.getElementById('grantAccessToggle').textContent = 'Private';
+        console.log(`${getCurrentPath()} is now private.`)
     })
     .catch(error => {
         console.error('Error making photo private:', error);
-        alert('Failed to make the photo private.');
+        alert('Failed to make the photo private. Please check the console log.');
     })
 }
 
@@ -750,7 +810,7 @@ async function grantAccessTo(resourceURL, webID) {
     })
     .catch(error => {
         console.error('Error granting access:', error);
-        alert(`Failed to grant access to ${webID}.`);
+        alert(`Failed to grant access to ${webID}. Please check the console log.`);
     });
 }
 
@@ -783,7 +843,7 @@ async function removeAccessFrom(webID) {
     })
     .catch(error => {
         console.error('Error removing access:', error);
-        alert(`Failed to remove access from ${webID}.`);
+        alert(`Failed to remove access from ${webID}. Please check the console log.`);
     });
 }
 
@@ -809,7 +869,7 @@ async function copyPhoto(storeLocation) {
     })
     .catch(error => {
         console.error('Error copying photo:', error);
-        alert('Failed to copy the photo.');
+        alert('Failed to copy the photo. Please check the console log.');
     });
 }
 
@@ -835,6 +895,7 @@ async function setUpMyPhotosFolder() {
         fetchAndDisplayItems(photosFolderURL);
     } catch (error) {
         console.error("Failed to setup photos' folder:", error);
+        alert("Failed to setup photos. Please check the console log.");
     }
 }
 
@@ -856,5 +917,6 @@ async function getStorage() {
         return json.directives[0].name;
     } catch {
         console.error("Failed to fetch the storage URL:", error);
+        alert("Failed to fetch the storage URL. Please check the console log.");
     }
 }
