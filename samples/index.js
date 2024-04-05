@@ -4,12 +4,12 @@ let storageURL;
 
 document.addEventListener("DOMContentLoaded", async function() {
     
-    // Set default photo
+    // Set the root path
     storageURL = await getStorage();
     setCurrentPath(storageURL);
 
-    // Show all items in the root storage URL
-    fetchAndDisplayItems();
+    // Set the default photo path to a folder called 'myPhotos'
+    setUpMyPhotosFolder();
 
     // Show primary control panel
     toggleControlPanel(true);
@@ -466,9 +466,13 @@ async function grantAccessAction() {
     if (access == 'Private') {
         grantAccess(getCurrentPath());
         document.getElementById('grantAccessToggle').textContent = 'Public';
+        console.log(`${getCurrentPath()} is now public.`)
+        alert('The photo is now public!');
     } else {
         removeAccess(getCurrentPath());
         document.getElementById('grantAccessToggle').textContent = 'Private';
+        console.log(`${getCurrentPath()} is now private.`)
+        alert('The photo is now private!');
     }
 }
 
@@ -686,8 +690,6 @@ async function grantAccess(url) {
         if (!response.ok) {
             throw new Error(`Make photo public failed: ${response.status}`);
         }
-        console.log(`${url} is now public.`)
-        alert('The photo is now public!');
     })
     .catch(error => {
         console.error('Error making photo public:', error);
@@ -702,8 +704,6 @@ async function removeAccess(url) {
         if (!response.ok) {
             throw new Error(`Make photo private failed: ${response.status}`);
         }
-        console.log(`${url} is now private.`)
-        alert('The photo is now private!');
     })
     .catch(error => {
         console.error('Error making photo private:', error);
@@ -804,6 +804,31 @@ async function copyPhoto(storeLocation) {
         console.error('Error copying photo:', error);
         alert('Failed to copy the photo.');
     });
+}
+
+async function setUpMyPhotosFolder() {
+    const photosFolderURL = getCurrentPath() + 'myPhotos/';
+    const listEvent = `${getPicoURL()}1556/sample_app/ls?fileURL=${photosFolderURL}`;
+    try {
+        const listResponse = await fetch(listEvent);
+        if (!listResponse.ok) {
+            throw new Error(`Failed to list items in myPhotos: ${response.status}`);
+        }
+        const json = await listResponse.json();
+        if (json.directives[0].name == null) {
+            const createFolderEvent = `${getPicoURL()}1556/sample_app/create_folder?containerURL=${photosFolderURL}`;
+            fetch(createFolderEvent)
+            .then(createFolderResponse => {
+                if (!createFolderResponse.ok) {
+                    throw new Error(`Failed to create folder: myPhotos: ${response.status}`);
+                }
+                grantAccess(photosFolderURL);
+            })
+        } 
+        fetchAndDisplayItems(photosFolderURL);
+    } catch (error) {
+        console.error("Failed to setup photos' folder:", error);
+    }
 }
 
 function displayCurrentPath(path) {
