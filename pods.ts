@@ -151,25 +151,24 @@ async function getBlob(originURL : string) {
     }
     return data;
 }
-async function createFileObject(data : Blob, destinationURL : string, fileName : string | undefined, functionName : string) : Promise<File> {
+async function createFileObject(data : Blob, destinationURL : string, functionName : string) : Promise<File> {
+    let fileName : string;
 
     //Get file name
-    if (typeof fileName === "undefined") {
-        //Forward Slash Filename
-        let fS_filename = destinationURL.split('/').pop();
-        //Backward Slash Filename
-        let bS_filename = destinationURL.split('\\').pop();
-        if (typeof fS_filename === "undefined" && typeof bS_filename === "undefined") {
-            fileName = destinationURL;
-        } else if (typeof fS_filename === "undefined") {
-            fileName = bS_filename;
-        } else if (typeof bS_filename === "undefined") {
-            fileName = fS_filename;
-        } else if (fS_filename.length > bS_filename.length) {
-            fileName = bS_filename;
-        } else {
-            fileName = fS_filename;
-        }
+    //Forward Slash Filename
+    let fS_filename = destinationURL.split('/').pop();
+    //Backward Slash Filename
+    let bS_filename = destinationURL.split('\\').pop();
+    if (typeof fS_filename === "undefined" && typeof bS_filename === "undefined") {
+        fileName = destinationURL;
+    } else if (typeof fS_filename === "undefined") {
+        fileName = <string>bS_filename;
+    } else if (typeof bS_filename === "undefined") {
+        fileName = fS_filename;
+    } else if (fS_filename.length > bS_filename.length) {
+        fileName = bS_filename;
+    } else {
+        fileName = fS_filename;
     }
     if (typeof fileName === "undefined") {
         throw MODULE_NAME + ":" + functionName + " could not define file name.";
@@ -307,11 +306,10 @@ function checkFileURL(fileURL : string, fileName : string) : string {
  * @param destinationURL A required parameter for the location in the Pod to store the file in. Must be an absolute url.
  * @param fileName An optional parameter for setting the file's name when it is stored in the Pod storage.
  */
-const store = krl.Action(["originURL", "destinationURL", "fileName", "doAutoAuth"], 
+const store = krl.Action(["originURL", "destinationURL", "doAutoAuth"], 
                         async function(
                             originURL : string, 
-                            destinationURL : string, 
-                            fileName : string | undefined = undefined,
+                            destinationURL : string,
                             doAutoAuth : Boolean = true
                             ) {
     const FUNCTION_NAME = "store";
@@ -331,10 +329,7 @@ const store = krl.Action(["originURL", "destinationURL", "fileName", "doAutoAuth
         throw "The file size exceed 500 MB";
     }*/
 	
-    let file : File = await getNonPodFile(this, [originURL, destinationURL, fileName, FUNCTION_NAME])
-    if (typeof fileName != "undefined") {
-        destinationURL = checkFileURL(destinationURL, fileName);
-    }
+    let file : File = await getNonPodFile(this, [originURL, destinationURL, FUNCTION_NAME])
 
     //let checkedDestinationURL = checkFileURL(destinationURL, file.name);
 	this.log.debug("Destination: " + destinationURL);
@@ -351,11 +346,10 @@ const store = krl.Action(["originURL", "destinationURL", "fileName", "doAutoAuth
         this.log.error("Error uploading file: ", error.message);
     });
 });
-const overwrite = krl.Action(["originURL", "destinationURL", "fileName", "doAutoAuth"], 
+const overwrite = krl.Action(["originURL", "destinationURL", "doAutoAuth"], 
                             async function(
                                 originURL : string, 
-                                destinationURL : string, 
-                                fileName : string | undefined = undefined,
+                                destinationURL : string,
                                 doAutoAuth : Boolean = true
                                 ) {
     const FUNCTION_NAME = "overwrite";
@@ -368,10 +362,7 @@ const overwrite = krl.Action(["originURL", "destinationURL", "fileName", "doAuto
         }
     }
 	
-    let file = await getNonPodFile(this, [originURL, destinationURL, fileName, FUNCTION_NAME]);
-    if (typeof fileName != "undefined") {
-        destinationURL = checkFileURL(destinationURL, fileName);
-    }
+    let file : File = await getNonPodFile(this, [originURL, destinationURL, FUNCTION_NAME]);
 
     //let checkedDestinationURL = checkFileURL(destinationURL, file.name);
 	this.log.debug("Destination: " + destinationURL);
@@ -388,11 +379,11 @@ const overwrite = krl.Action(["originURL", "destinationURL", "fileName", "doAuto
         this.log.error("Error uploading file: ", error.message);
     });
 });
-const getNonPodFile = krl.Action(["originURL", "destinationURL", "fileName", "functionName"], 
-                                async function(originURL : string, destinationURL : string, fileName : string | undefined, functionName : string) : Promise<File> {
+const getNonPodFile = krl.Action(["originURL", "destinationURL", "functionName"], 
+                                async function(originURL : string, destinationURL : string, functionName : string) : Promise<File> {
     let file : File;
     let blob : Blob = await getBlob(originURL);
-    file = await createFileObject(blob, destinationURL, fileName, functionName);
+    file = await createFileObject(blob, destinationURL, functionName);
 
 	return file;
 });
