@@ -120,16 +120,14 @@ const hasValidAccessToken = krl.Function([], async function() {
 	if (!accessToken || !receiveTime || !validDuration) {
 		return false;
 	}
-	if (accessToken && receiveTime && validDuration) {
-		const currentTime = getCurrentTimeInSeconds();
-		if (currentTime-receiveTime > validDuration) {
-			this.log.debug("Current Time: " + String(currentTime) + ", " +
-							"Receive Time: " + String(receiveTime));
-			this.log.debug("Valid Duration: " + String(validDuration) + ", " +
-							"Current Duration: " + String(currentTime - receiveTime))
-			return false;
-		}
-	}
+    const currentTime = getCurrentTimeInSeconds();
+    this.log.debug("Current Time: " + String(currentTime) + ", " +
+                    "Receive Time: " + String(receiveTime));
+    this.log.debug("Valid Duration: " + String(validDuration) + ", " +
+                    "Current Duration: " + String(currentTime - receiveTime));
+    if (currentTime-receiveTime > validDuration) {
+        return false;
+    }
 	return true;
 });
 const isStorageConnected = krl.Function([], async function() : Promise<boolean> {
