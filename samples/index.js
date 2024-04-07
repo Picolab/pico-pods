@@ -124,20 +124,6 @@ function toggleDetachAttachButtons(pod) {
     }
 }
 
-async function allPhotos() {
-    const sharedPhotosButton = document.getElementById('listAllSharedPhotos');
-    const allPhotosButton = document.getElementById('listAllPhotos');
-    allPhotosButton.classList.add('active');
-    sharedPhotosButton.classList.remove('active');
-}
-
-async function sharedPhotos() {
-    const sharedPhotosButton = document.getElementById('listAllSharedPhotos');
-    const allPhotosButton = document.getElementById('listAllPhotos');
-    sharedPhotosButton.classList.add('active');
-    allPhotosButton.classList.remove('active');
-}
-
 async function toggleFolder(folderHeader) {
     const folderContent = folderHeader.nextElementSibling;
     folderContent.classList.toggle('show');
@@ -239,7 +225,10 @@ function createItemHTML(itemName, dataURL) {
 function displayFullSizePhoto(dataURL, pathURL) {
     const folderDiv = document.querySelector('.folder');
     folderDiv.innerHTML = `<img src="${dataURL}" style="max-width: 100%; max-height: 100%;">`; 
-    lastURL.push(getCurrentPath());
+    // Keep track of the last folder which users were at
+    if (getCurrentPath().endsWith('/')) {
+        lastURL.push(getCurrentPath());
+    }
     setCurrentPath(pathURL);
     displayCurrentPath(getCurrentPath());
     toggleControlPanel(false); 
@@ -258,13 +247,12 @@ function addButton(id, text, action) {
 async function toggleControlPanel(showDefaultButtons) {
     const controlPanel = document.querySelector('.control-panel');
     controlPanel.innerHTML = ''; // Clear existing buttons
+    addButton('back', 'Back', backAction);
     if (showDefaultButtons) {
-        addButton('back', 'Back', backAction);
         addButton('addPhoto', 'Add photo', addPhotoAction2);
         addButton('addFolder', 'Add folder', addFolderAction);
         addButton('deleteFolder', 'Delete folder', deleteFolderAction);
     } else {
-        addButton('back', 'Back', backAction);
         addButton('deletePhoto', 'Delete photo', deletePhotoAction);
         addButton('copy', 'Copy', copyAction);
         addButton('downloand', 'Download', downloadAction);
@@ -280,13 +268,15 @@ function getItemType(itemName) {
     return 'other';
 }
 
-function backAction() {
+async function backAction() {
     if (lastURL.length == 0) {
         fetchAndDisplayItems();
     } else {
         fetchAndDisplayItems(lastURL.pop(), true);
     }
     toggleControlPanel(true);
+    document.getElementById('listAllSharedPhotos').classList.remove('active');
+    document.getElementById('listAllPhotos').classList.remove('active');
 }
 
 function addPhotoAction2() {
@@ -603,7 +593,7 @@ async function removeAccessFromAction() {
         defaultOption.textContent = 'Select a webID';
         defaultOption.value = '';
         select.appendChild(defaultOption);
-
+        console.log(webIDs.length);
         webIDs.slice(1).forEach(id => { // Skip the owner's WebID
             const option = document.createElement('option');
             option.value = id;
@@ -778,8 +768,8 @@ async function removeAccess(url) {
     })
 }
 
-async function getAccess() {
-    const event = `${getPicoURL()}1556/sample_app/get_access?resourceURL=${getCurrentPath()}`;
+async function getAccess(url = getCurrentPath()) {
+    const event = `${getPicoURL()}1556/sample_app/get_access?resourceURL=${url}`;
     const response = await fetch(event);
     if (!response.ok) {
         throw new Error(`Get photo access failed: ${response.status}`);
@@ -814,8 +804,8 @@ async function grantAccessTo(resourceURL, webID) {
     });
 }
 
-async function getAllAgentAccess() {
-    const event = `${getPicoURL()}1556/sample_app/get_all_agent_access?resourceURL=${getCurrentPath()}`;
+async function getAllAgentAccess(url = getCurrentPath()) {
+    const event = `${getPicoURL()}1556/sample_app/get_all_agent_access?resourceURL=${url}`;
     const response = await fetch(event);
     if (!response.ok) {
         throw new Error(`Get all agents access failed: ${response.status}`);
@@ -918,5 +908,105 @@ async function getStorage() {
     } catch {
         console.error("Failed to fetch the storage URL:", error);
         alert("Failed to fetch the storage URL. Please check the console log.");
+    }
+}
+
+async function displayAllPhotos(isShared = false, folderURL = storageURL + 'myPhotos/') {
+
+    const sharedPhotosButton = document.getElementById('listAllSharedPhotos');
+    const allPhotosButton = document.getElementById('listAllPhotos');
+    if (isShared) {
+        sharedPhotosButton.classList.add('active');
+        allPhotosButton.classList.remove('active');
+    } else {
+        allPhotosButton.classList.add('active');
+        sharedPhotosButton.classList.remove('active');
+    }
+
+    try {
+        const response = await fetch(`${getPicoURL()}1556/sample_app/ls?fileURL=${folderURL}`);
+        if (!response.ok) {
+            throw new Error(`Failed to display all photos: ${response.statusText}`);
+        }
+        const json = await response.json();
+        const items = json.directives[0].name;
+
+        // A map to gather all photos info
+        let photoMap = new Map();
+
+        // Get photos recursively
+        await getPhotos(items, folderURL, photoMap, isShared);
+
+        // Display photos using the map
+        displayPhotos(photoMap);
+    } catch (error) {
+        console.error("Error displaying all photos:", error);
+    }
+}
+
+async function getPhotos(items, currentPath, photoMap, isShared) {
+    for (let item of items) {
+        const itemType = getItemType(item);
+        const fullPath = currentPath + item;
+
+        if (itemType === 'folder') {
+            // Fetch and process items in this folder
+            const response = await fetch(`${getPicoURL()}1556/sample_app/ls?fileURL=${fullPath}`);
+            if (response.ok) {
+                const json = await response.json();
+                const subItems = json.directives[0].name;
+                await getPhotos(subItems, fullPath, photoMap, isShared); // Recursive call
+            }
+        } else if (itemType === 'photo') {
+            // Add photo to the map
+            if (isShared) {
+                const access = await checkAccess(fullPath);
+                if (access) {
+                    const dataURL = await getDataURL(fullPath);
+                    photoMap.set(item, { dataURL, storeLocation: currentPath });
+                }
+                continue; 
+            } else {
+                const dataURL = await getDataURL(fullPath);
+                photoMap.set(item, { dataURL, storeLocation: currentPath });
+            }
+
+        }
+    }
+}
+
+async function checkAccess(url) {
+    const access = await getAccess(url);
+    const webIDs = await getAllAgentAccess(url);
+    if (access == 'Public' || webIDs.length > 1) {
+        return true;
+    }
+    return false;
+}
+
+function displayPhotos(photoMap) {
+    const folderDiv = document.querySelector('.folder');
+    folderDiv.innerHTML = ''; // Clear current contents
+
+    for (let [photoName, info] of photoMap) {
+        const src = info.dataURL;
+        const altText = 'Photo';
+        const onClickAttribute = `onclick="displayFullSizePhoto('${info.dataURL}', '${info.storeLocation + photoName}')"`;
+
+        const itemHTML = `<div class="item" ${onClickAttribute} style="display: inline-block; width: 300px; text-align: center; margin: 5px;">
+                            <img src="${src}" alt="${altText}" style="width: 200px; height: 200px;">
+                            <p>${photoName.replace('/', '')}</p>
+                        </div>`;
+
+        folderDiv.innerHTML += itemHTML;
+    }
+
+    const controlPanel = document.querySelector('.control-panel');
+    controlPanel.innerHTML = ''; // Clear existing buttons
+    addButton('back', 'Back', backAction); // only add button is available when checking all photos
+    displayCurrentPath('');
+    // Keep track of the last folder which users were at
+    if (getCurrentPath().endsWith('/')) {
+        lastURL.push(getCurrentPath());
     }
 }
