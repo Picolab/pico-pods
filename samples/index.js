@@ -650,12 +650,13 @@ async function search() {
             throw new Error(`Search failed: ${response.status}`);
         }
         const json = await response.json();
-        const path = json.directives[0].name + fileName;
+        const path = json.directives[0].name;
         if (path == null) {
             alert("File not found! Please make sure the file name is spelled correctly and the file extension is correct.")
         } else {
-            const dataURL = await getDataURL(path);
-            displayFullSizePhoto(dataURL, path);
+            const fullPath = path + fileName;
+            const dataURL = await getDataURL(fullPath);
+            displayFullSizePhoto(dataURL, fullPath);
         }
     } catch (error) {
         console.log("error in search: " + error);
