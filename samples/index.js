@@ -192,7 +192,6 @@ async function fetchAndDisplayItems(folderPath = storageURL, goBack = false) {
     }
 }
 
-// Function to create HTML for an item
 function createItemHTML(itemName, dataURL) {
     const itemType = getItemType(itemName);
     let src = '';
@@ -234,6 +233,20 @@ function displayFullSizePhoto(dataURL, pathURL) {
     setCurrentPath(pathURL);
     displayCurrentPath(getCurrentPath());
     toggleControlPanel(false); 
+}
+
+async function listItems(folderURL) {
+    try {
+        const event = `${getPicoURL()}1556/sample_app/ls?fileURL=${folderURL}`;
+        const listResponse = await fetch(event);
+        if (!listResponse.ok) {
+            throw new Error(`List items failed: ${response.status}`);
+        }
+        const json = await listResponse.json();
+        return json.directives[0].name;
+    } catch (error) {
+        console.error("Failed to list items:", error);
+    }
 }
 
 function addButton(id, text, action) {
@@ -436,17 +449,11 @@ function addFolderAction() {
 
 async function deleteFolderAction() {
     try {
-        const listEvent = `${getPicoURL()}1556/sample_app/ls?fileURL=${getCurrentPath()}`;
         if (getCurrentPath() == storageURL) {
             alert('You cannot delete the root folder!');
             return;
         }
-        const listResponse = await fetch(listEvent);
-        if (!listResponse.ok) {
-            throw new Error(`List folder failed: ${response.status}`);
-        }
-        const json = await listResponse.json();
-        const items = json.directives[0].name;
+        const items = await listItems(getCurrentPath());
         if (items.length != 0) {
             alert('You can only delete a empty folder!');
             return;
@@ -668,6 +675,11 @@ async function addFolder(folderName) {
         folderName += '/';
     }
     const newPath = getCurrentPath() + folderName;
+    const hasSubfolder = await checkSubfolder(newPath);
+    if (!hasSubfolder) {
+        alert('Subfolder(s) not found. Please create corresponding subfolder(s) first.');
+        return;
+    }
     const event = `${getPicoURL()}1556/sample_app/create_folder?containerURL=${newPath}`;
     fetch(event)
     .then(response => {
@@ -680,6 +692,16 @@ async function addFolder(folderName) {
         console.error('Error adding folder:', error);
         alert('Failed to add the folder. Please check the console log.');
     });
+}
+
+async function checkSubfolder(url) {
+    const lastIndex = url.lastIndexOf('/', url.lastIndexOf('/') - 1);
+    const subfolder = url.substring(0, lastIndex + 1);
+    const items = await listItems(subfolder);
+    if (items == null) {
+        return false;
+    }
+    return true;
 }
 
 async function getDataURL(url) {
@@ -746,6 +768,7 @@ async function grantAccess(url) {
         if (!response.ok) {
             throw new Error(`Make photo public failed: ${response.status}`);
         }
+        // Check if it is a folder or photo. The grant/remove access public only available in photo view.
         if (!url.endsWith('/')) document.getElementById('grantAccessToggle').textContent = 'Public';
         console.log(`${getCurrentPath()} is now public.`)
     })
@@ -762,6 +785,7 @@ async function removeAccess(url) {
         if (!response.ok) {
             throw new Error(`Make photo private failed: ${response.status}`);
         }
+        // Check if it is a folder or photo. The grant/remove access public only available in photo view.
         if (!url.endsWith('/')) document.getElementById('grantAccessToggle').textContent = 'Private';
         console.log(`${getCurrentPath()} is now private.`)
     })
@@ -876,10 +900,10 @@ async function setUpMyPhotosFolder() {
         }
         const json = await listResponse.json();
         if (json.directives[0].name == null) {
-            const createFolderEvent = `${getPicoURL()}1556/sample_app/create_folder?containerURL=${photosFolderURL}`;
-            fetch(createFolderEvent)
-            .then(createFolderResponse => {
-                if (!createFolderResponse.ok) {
+            const addFolderEvent = `${getPicoURL()}1556/sample_app/create_folder?containerURL=${photosFolderURL}`;
+            fetch(addFolderEvent)
+            .then(addFolderResponse => {
+                if (!addFolderResponse.ok) {
                     throw new Error(`Failed to create folder: myPhotos: ${response.status}`);
                 }
                 grantAccess(photosFolderURL);
