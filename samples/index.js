@@ -211,9 +211,11 @@ function createItemHTML(itemName, dataURL) {
             onClickAttribute = `onclick="displayFullSizePhoto('${dataURL}', '${getCurrentPath() + itemName}')"`;
             break;
         case 'other':
-            src = 'file.png'; 
-            altText = 'File';
-            break;
+            // Hide the other types of file
+            return '';
+            // src = 'file.png'; 
+            // altText = 'File';
+            // break;
     }
 
     return `<div class="item" ${onClickAttribute} style="display: inline-block; width: 300px; text-align: center; margin: 5px;">
