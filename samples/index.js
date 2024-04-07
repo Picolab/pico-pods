@@ -985,7 +985,7 @@ async function getPhotos(items, currentPath, photos, isShared) {
                 await getPhotos(subItems, fullPath, photos, isShared); // Recursive call
             }
         } else if (itemType === 'photo') {
-            // Add photo to the map
+            // Add photo to the array
             if (isShared) {
                 const access = await checkAccess(fullPath);
                 if (access) {
@@ -997,7 +997,6 @@ async function getPhotos(items, currentPath, photos, isShared) {
                 const dataURL = await getDataURL(fullPath);
                 photos.push([item, dataURL, currentPath]);
             }
-
         }
     }
 }
