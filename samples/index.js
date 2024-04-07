@@ -958,20 +958,20 @@ async function displayAllPhotos(isShared = false, folderURL = storageURL + 'myPh
         const json = await response.json();
         const items = json.directives[0].name;
 
-        // A map to gather all photos info
-        let photoMap = new Map();
+        // An array to gather all photos info
+        let photos = [];
 
         // Get photos recursively
-        await getPhotos(items, folderURL, photoMap, isShared);
+        await getPhotos(items, folderURL, photos, isShared);
 
-        // Display photos using the map
-        displayPhotos(photoMap);
+        // Display photos using the array
+        displayPhotos(photos);
     } catch (error) {
         console.error("Error displaying all photos:", error);
     }
 }
 
-async function getPhotos(items, currentPath, photoMap, isShared) {
+async function getPhotos(items, currentPath, photos, isShared) {
     for (let item of items) {
         const itemType = getItemType(item);
         const fullPath = currentPath + item;
@@ -982,7 +982,7 @@ async function getPhotos(items, currentPath, photoMap, isShared) {
             if (response.ok) {
                 const json = await response.json();
                 const subItems = json.directives[0].name;
-                await getPhotos(subItems, fullPath, photoMap, isShared); // Recursive call
+                await getPhotos(subItems, fullPath, photos, isShared); // Recursive call
             }
         } else if (itemType === 'photo') {
             // Add photo to the map
@@ -990,12 +990,12 @@ async function getPhotos(items, currentPath, photoMap, isShared) {
                 const access = await checkAccess(fullPath);
                 if (access) {
                     const dataURL = await getDataURL(fullPath);
-                    photoMap.set(item, { dataURL, storeLocation: currentPath });
+                    photos.push([item, dataURL, currentPath]);
                 }
                 continue; 
             } else {
                 const dataURL = await getDataURL(fullPath);
-                photoMap.set(item, { dataURL, storeLocation: currentPath });
+                photos.push([item, dataURL, currentPath]);
             }
 
         }
@@ -1011,18 +1011,17 @@ async function checkAccess(url) {
     return false;
 }
 
-function displayPhotos(photoMap) {
+function displayPhotos(photos) {
     const folderDiv = document.querySelector('.folder');
     folderDiv.innerHTML = ''; // Clear current contents
-
-    for (let [photoName, info] of photoMap) {
-        const src = info.dataURL;
+    for (let i = 0; i < photos.length; i++) {
+        const src = photos[i][1];
         const altText = 'Photo';
-        const onClickAttribute = `onclick="displayFullSizePhoto('${info.dataURL}', '${info.storeLocation + photoName}')"`;
+        const onClickAttribute = `onclick="displayFullSizePhoto('${photos[i][1]}', '${photos[i][2] + photos[i][0]}')"`;
 
         const itemHTML = `<div class="item" ${onClickAttribute} style="display: inline-block; width: 300px; text-align: center; margin: 5px;">
                             <img src="${src}" alt="${altText}" style="width: 200px; height: 200px;">
-                            <p>${photoName.replace('/', '')}</p>
+                            <p>${photos[i][0].replace('/', '')}</p>
                         </div>`;
 
         folderDiv.innerHTML += itemHTML;
