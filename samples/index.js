@@ -746,7 +746,7 @@ async function grantAccess(url) {
         if (!response.ok) {
             throw new Error(`Make photo public failed: ${response.status}`);
         }
-        document.getElementById('grantAccessToggle').textContent = 'Public';
+        if (!url.endsWith('/')) document.getElementById('grantAccessToggle').textContent = 'Public';
         console.log(`${getCurrentPath()} is now public.`)
     })
     .catch(error => {
@@ -762,7 +762,7 @@ async function removeAccess(url) {
         if (!response.ok) {
             throw new Error(`Make photo private failed: ${response.status}`);
         }
-        document.getElementById('grantAccessToggle').textContent = 'Private';
+        if (!url.endsWith('/')) document.getElementById('grantAccessToggle').textContent = 'Private';
         console.log(`${getCurrentPath()} is now private.`)
     })
     .catch(error => {
