@@ -558,7 +558,12 @@ const removeFolder = krl.Action(["folderURL", "doAutoAuth"], async function(fold
     this.log.debug('Container deleted successfully!\n');
 });
 
-const getAllAgentAccess = krl.Function(["resourceURL"], async function(resourceURL: string) {
+const getAllAgentAccess = krl.Function(["resourceURL", "doAutoAuth"], async function(resourceURL: string, doAutoAuth : Boolean = true) {
+    if (doAutoAuth) {
+        if (!await autoAuth(this, [])) {
+            throw MODULE_NAME + ":createFolder could not validate Pod access token.";
+        }
+    }
     const accessByAgent : any = await universalAccess.getAgentAccessAll(resourceURL, { fetch: authFetch });
     let agents : string[] = [];
     for (const [agent, agentAccess] of Object.entries(accessByAgent)) {
@@ -615,7 +620,12 @@ const removeAgentAccess = krl.Action(["resourceURL", "webID", "doAutoAuth"], asy
       });
 });
 
-const getPublicAccess = krl.Function(["resourceURL"], async function(resourceURL: string) {
+const getPublicAccess = krl.Function(["resourceURL", "doAutoAuth"], async function(resourceURL: string, doAutoAuth : boolean = true) {
+    if (doAutoAuth) {
+        if (!await autoAuth(this, [])) {
+            throw MODULE_NAME + ":createFolder could not validate Pod access token.";
+        }
+    }
     const access = await universalAccess.getPublicAccess(resourceURL, { fetch: authFetch });
     if (access === null) {
         console.log("Could not load access details for this Resource.");
