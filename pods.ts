@@ -679,6 +679,7 @@ const removePublicAccess = krl.Action(["resourceURL", "doAutoAuth"], async funct
 const pods: krl.Module = {
 	connectStorage: connectStorage,
 	disconnectStorage: disconnectStorage,
+    isStorageConnected: isStorageConnected,
 	store: store,
 	overwrite: overwrite,
 	removeFile: removeFile,
