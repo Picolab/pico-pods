@@ -397,8 +397,8 @@ const removeFile = krl.Action(["fileURL", "doAutoAuth"], async function(fileURL 
     this.log.debug('File deleted successfully!\n');
 });
 
-const copyFile = krl.Action(["fetchFileURL", "storeLocation", "doAutoAuth"], 
-							 async function(fetchFileURL : string, storeLocation : string, doAutoAuth : Boolean = true) {
+const copyFile = krl.Action(["originURL", "destinationURL", "doAutoAuth"], 
+							 async function(originURL : string, destinationURL : string, doAutoAuth : Boolean = true) {
     if (doAutoAuth) {
         if (!await autoAuth(this, [])) {
             throw MODULE_NAME + ":copyFile could not validate Pod access token.";
@@ -406,26 +406,21 @@ const copyFile = krl.Action(["fetchFileURL", "storeLocation", "doAutoAuth"],
     }
     try {
         const file = await getFile(
-        fetchFileURL,               // File in Pod to Read
+        originURL,               // File in Pod to Read
         { fetch: authFetch }       // fetch from authenticated session
         );
         this.log.debug( `Fetched a ${getContentType(file)} file from ${getSourceUrl(file)}.`);
         this.log.debug(`The file is ${isRawData(file) ? "not " : ""}a dataset.`);
 
-        // get the file name
-        let filename : string | undefined = fetchFileURL.split('/').pop()
-        // get the URL
-        let url = storeLocation + filename;
-
-        if (url.startsWith('http://') || url.startsWith('https://')) {
+        if (destinationURL.startsWith('http://') || destinationURL.startsWith('https://')) {
 
             overwriteFile(
-                url,
+                destinationURL,
                 file,
                 { fetch: authFetch }
             )
             .then(() => {
-                this.log.debug(`File copied to ${storeLocation} successfully!\n`);
+                this.log.debug(`File copied to ${destinationURL} successfully!\n`);
             })
             .catch(error => {
                 this.log.error("Error copying file:", error);
@@ -435,7 +430,7 @@ const copyFile = krl.Action(["fetchFileURL", "storeLocation", "doAutoAuth"],
                 const buffer = Buffer.from(arrayBuffer);
                 
                 // Writing the buffer to a file
-                fs.writeFile(url, buffer, (err : Error | null) => {
+                fs.writeFile(destinationURL, buffer, (err : Error | null) => {
                 if (err) {
                     this.log.error('Failed to save the file:', err);
                 } else {
@@ -469,9 +464,9 @@ const pods_fetch = krl.Function(["fileURL", "doAutoAuth"], async function(fileUR
 	return dataUrl;
 });
 
-const listItems = krl.Function(["fileURL", "doAutoAuth"], async function(fileURL : string, doAutoAuth : Boolean = true) {
+const listItems = krl.Function(["folderURL", "doAutoAuth"], async function(fileURL : string, doAutoAuth : Boolean = true) {
     if ((fileURL != '') && (!fileURL.endsWith('/'))) {
-    	throw MODULE_NAME + ":listItems can only be called on containers. Ensure that containers have their trailing slash."
+    	throw MODULE_NAME + ":listItems can only be called on folders (AKA containers). Ensure that folders have their trailing slash."
     }
     if (doAutoAuth) {
         if (!await autoAuth(this, [])) {
@@ -544,22 +539,22 @@ const findFile = krl.Function(["fileName", "doAutoAuth"], async function (fileNa
     return null;
 });
 
-const createFolder = krl.Action(["containerURL", "doAutoAuth"], async function(containerURL : string, doAutoAuth : Boolean = true) {
+const createFolder = krl.Action(["folderURL", "doAutoAuth"], async function(folderURL : string, doAutoAuth : Boolean = true) {
     if (doAutoAuth) {
         if (!await autoAuth(this, [])) {
             throw MODULE_NAME + ":createFolder could not validate Pod access token.";
         }
     }
-    await createContainerAt(containerURL, { fetch: authFetch});
+    await createContainerAt(folderURL, { fetch: authFetch});
     this.log.debug('Container created successfully!\n');
 });
-const removeFolder = krl.Action(["containerURL", "doAutoAuth"], async function(containerURL : string, doAutoAuth : Boolean = true) {
+const removeFolder = krl.Action(["folderURL", "doAutoAuth"], async function(folderURL : string, doAutoAuth : Boolean = true) {
     if (doAutoAuth) {
         if (!await autoAuth(this, [])) {
             throw MODULE_NAME + ":removeFolder could not validate Pod access token.";
         }
     }
-    await deleteContainer(containerURL, { fetch: authFetch});
+    await deleteContainer(folderURL, { fetch: authFetch});
     this.log.debug('Container deleted successfully!\n');
 });
 
