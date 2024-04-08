@@ -680,6 +680,7 @@ const pods: krl.Module = {
 	connectStorage: connectStorage,
 	disconnectStorage: disconnectStorage,
     isStorageConnected: isStorageConnected,
+    hasValidAccessToken: hasValidAccessToken,
 	store: store,
 	overwrite: overwrite,
 	removeFile: removeFile,
