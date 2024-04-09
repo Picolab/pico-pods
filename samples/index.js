@@ -738,7 +738,6 @@ async function prefetchDataURLs(items) {
 async function addPhoto(url, filename) {
     const storeLocation = getCurrentPath() + filename;
     const data = {
-        fileName: filename,
         originURL: url,
         destinationURL: storeLocation
     };
@@ -864,13 +863,10 @@ async function removeAccessFrom(webID) {
     });
 }
 
-async function copyPhoto(storeLocation) {
-    if (!storeLocation.endsWith('/')) {
-        storeLocation += '/';
-    }
+async function copyPhoto(destinationURL) {
     const data = {
-        fetchFileURL: getCurrentPath(),
-        storeLocation: storeLocation
+        originURL: getCurrentPath(),
+        destinationURL: destinationURL
     };
     fetch(`${getPicoURL()}1556/sample_app/copy_file`, {
         method: 'POST',
