@@ -741,7 +741,7 @@ async function addPhoto(url, filename) {
         originURL: url,
         destinationURL: storeLocation
     };
-    fetch(`${getPicoURL()}1556/sample_app/overwrite_file`, {
+    fetch(`${getPicoURL()}1556/sample_app/store_file`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
