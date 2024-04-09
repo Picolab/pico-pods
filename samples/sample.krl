@@ -43,8 +43,8 @@ ruleset sample_app {
 
 	rule copy_file {
 		select when sample_app copy_file
-		pods:copyFile(event:attrs.get("fetchFileURL"),
-					event:attrs.get("storeLocation"))
+		pods:copyFile(event:attrs.get("originURL"),
+					event:attrs.get("destinationURL"))
 	}
 	
 	rule fetch_file {
