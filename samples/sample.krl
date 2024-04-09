@@ -25,22 +25,15 @@ ruleset sample_app {
 		select when sample_app authenticate_storage
 		pods:authenticate()
 	}
-	
-	rule store_file {
+
+	rule test_store_file {
 		select when sample_app store_file
-		pods:store(event:attrs.get("fetchFileURL"), event:attrs.get("storeLocation"))
+		pods:overwrite(event:attrs.get("originURL"), event:attrs.get("destinationURL"), event:attrs.get("doAutoAuth"))
 	}
 
-	rule overwrite_file_with_name {
+	rule test_overwrite_file {
 		select when sample_app overwrite_file
-		if (event:attrs.get("fileName")) then
-			pods:overwrite(event:attrs.get("originURL"), event:attrs.get("destinationURL"), event:attrs.get("fileName"))
-	}
-
-	rule overwrite_file_no_name {
-		select when sample_app overwrite_file
-		if (not event:attrs.get("fileName")) then
-			pods:overwrite(event:attrs.get("originURL"), event:attrs.get("destinationURL"))
+		pods:overwrite(event:attrs.get("originURL"), event:attrs.get("destinationURL"), event:attrs.get("doAutoAuth"))
 	}
 
 	rule remove_file {
