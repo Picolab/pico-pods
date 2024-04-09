@@ -264,7 +264,7 @@ async function toggleControlPanel(showDefaultButtons) {
     controlPanel.innerHTML = ''; // Clear existing buttons
     addButton('back', 'Back', backAction);
     if (showDefaultButtons) {
-        addButton('addPhoto', 'Add photo', addPhotoAction2);
+        addButton('addPhoto', 'Add photo', addPhotoAction);
         addButton('addFolder', 'Add folder', addFolderAction);
         addButton('deleteFolder', 'Delete folder', deleteFolderAction);
     } else {
