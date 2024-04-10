@@ -264,7 +264,7 @@ async function toggleControlPanel(showDefaultButtons) {
     controlPanel.innerHTML = ''; // Clear existing buttons
     addButton('back', 'Back', backAction);
     if (showDefaultButtons) {
-        addButton('addPhoto', 'Add photo', addPhotoAction2);
+        addButton('addPhoto', 'Add photo', addPhotoAction);
         addButton('addFolder', 'Add folder', addFolderAction);
         addButton('deleteFolder', 'Delete folder', deleteFolderAction);
     } else {
@@ -738,11 +738,10 @@ async function prefetchDataURLs(items) {
 async function addPhoto(url, filename) {
     const storeLocation = getCurrentPath() + filename;
     const data = {
-        fileName: filename,
         originURL: url,
         destinationURL: storeLocation
     };
-    fetch(`${getPicoURL()}1556/sample_app/overwrite_file`, {
+    fetch(`${getPicoURL()}1556/sample_app/store_file`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -864,13 +863,10 @@ async function removeAccessFrom(webID) {
     });
 }
 
-async function copyPhoto(storeLocation) {
-    if (!storeLocation.endsWith('/')) {
-        storeLocation += '/';
-    }
+async function copyPhoto(destinationURL) {
     const data = {
-        fetchFileURL: getCurrentPath(),
-        storeLocation: storeLocation
+        originURL: getCurrentPath(),
+        destinationURL: destinationURL
     };
     fetch(`${getPicoURL()}1556/sample_app/copy_file`, {
         method: 'POST',
