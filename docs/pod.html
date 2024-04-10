@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pod</title>
+    <script src="index.js"></script> 
+    <link rel="stylesheet" href="pod.css">
+</head>
+<body>
+    <p>Welcome to your pico!</p>
+    <button id="detachPod" class="detach-button" onclick="toggleDetachAttachButtons()">Detach pod</button>
+    <button id="attachPod" class="attach-button" onclick="toggleDetachAttachButtons()">Attach pod</button>
+    <div class="navbar">
+        <input type="text" id="searchInput" class="search-input" placeholder="Search...">
+        <button id="searchPhoto" type="click" onclick="search()">Search photo</button>
+        <button id="listAllPhotos" class="toggle-button" onclick="displayAllPhotos()">All Photos</button>
+        <button id="listAllSharedPhotos" class="toggle-button" onclick="displayAllPhotos(true)">Shared Photos</button>
+    </div>
+    <div class="folders-container">
+        <p id="currentPath"></p>
+        <div class="control-panel">
+        </div>
+        <div class="folder">
+        </div>
+    </div>
+    <div id="myModal" class="modal">
+        <div class="modal-content">
+            <h2>Connect Pod</h2>
+        <form id="loginForm">
+            <div class="input-group">
+                <input type="text" id="storageURL" required>
+                <label for="storageURL">Pod URL</label>
+            </div>
+            <div class="input-group">
+                <input type="text" id="clientID" required>
+                <label for="clientID">Client ID</label>
+            </div>
+            <div class="input-group">
+                <input type="text" id="clientSecret" required>
+                <label for="clientSecret">Client Secret</label>
+            </div>
+            <div class="input-group">
+                <input type="text" id="tokenURL" required>
+                <label for="tokenURL">Token URL</label>
+            </div>
+            <button id="attachButton" type="submit">Attach</button>
+        </form>
+        </div>
+    </div>
+</body>
+</html>

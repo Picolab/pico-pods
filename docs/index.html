@@ -1,14 +1,22 @@
-<!DOCTYPE HTML>
-<html>
-  <head>
-    <title>pico-pods</title>
+<!DOCTYPE html>
+<html lang="en">
+<head>
     <meta charset="UTF-8">
-    <style type="text/css">
-      body { font-family: "Helvetica Neue",Helvetica,Arial,sans-serif; }
-    </style>
-  </head>
-  <body>
-    <h1>pico-pods</h1>
-    <div>hello world!</div>
-  </body>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to the dApps!</title>
+    <link rel="stylesheet" href="index.css">
+    <script src="index.js"></script> 
+</head>
+<body>
+    <div class="login-container">
+        <h2>Welcome to THE dApps!</h2>
+        <form id="loginForm">
+            <div class="input-group">
+                <input type="text" id="PicoECI" required>
+                <label for="PicoECI">Pico ECI</label>
+            </div>
+            <button id="attachButton" type="submit" onclick="attach(event)">Attach</button>
+        </form>
+    </div>
+</body>
 </html>
