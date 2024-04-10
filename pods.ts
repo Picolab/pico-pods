@@ -445,7 +445,6 @@ const copyFile = krl.Action(["originURL", "destinationURL", "doAutoAuth"],
 
 const pods_fetch = krl.Function(["fileURL", "doAutoAuth"], async function(fileURL : string, doAutoAuth : Boolean = true) {
     if (doAutoAuth) {
-        this.log.debug("Automatically authenticating...");
         if (!await autoAuth(this, [])) {
             throw MODULE_NAME + ":fetch could not validate Pod access token.";
         }
