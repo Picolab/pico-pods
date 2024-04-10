@@ -690,13 +690,12 @@ const pods: krl.Module = {
 	createFolder: createFolder,
 	removeFolder: removeFolder,
 
-	getStorage : getStorage, //Private KRL helper function, does not need to be exported but may be helpful to the developer
-	setStorage : setStorage, //Private KRL helper function, does not need to be exported
-	// isPodConnected : isPodConnected, //Private KRL helper function, does not need to be exported
-	//The following are helper functions that are exported for testing
-	setClientID: setClientID, //Private KRL helper function, does not need to be exported
-	setClientSecret: setClientSecret, //Private KRL helper function, does not need to be exported
-	setRefreshTokenURL: setRefreshTokenURL, //Private KRL helper function, does not need to be exported
+    //The following are helper functions that are exported for testing
+	getStorage : getStorage, //Private KRL helper function, does not need to be exported but may be useful for the developer
+	// setStorage : setStorage, //Private KRL helper function, does not need to be exported
+	// setClientID: setClientID, //Private KRL helper function, does not need to be exported
+	// setClientSecret: setClientSecret, //Private KRL helper function, does not need to be exported
+	// setRefreshTokenURL: setRefreshTokenURL, //Private KRL helper function, does not need to be exported
 
 	getAccessTokenValidDuration : getAccessTokenValidDuration, //Mostly private KRL helper function, but exported since developer may want to know about the token
 	getAccessTokenReceiveTime : getAccessTokenReceiveTime, //Mostly private KRL helper function, but exported since developer may want to know about the token
