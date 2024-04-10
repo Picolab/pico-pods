@@ -249,14 +249,6 @@ const disconnectStorage = krl.Action([], async function() {
 	return "Disconnected successfully.";
 });
 
-function checkFileURL(fileURL : string, fileName : string) : string {
-	let newFileURL : string = fileURL;
-	if ((!fileURL.endsWith(fileName)) && 
-        (fileURL.endsWith("/") || fileURL.endsWith("\\"))) {
-		newFileURL = fileURL + fileName;
-	}
-	return newFileURL;
-}
 /**
  * Stores a file in the connected Pod storage if the given Storage's directory to the file 
  * already exists and the file does not already exist.
