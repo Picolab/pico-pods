@@ -43,29 +43,7 @@ let accessToken : string | undefined;
 let accessTokenReceiveTime : number | undefined;
 let accessTokenValidDuration : number | undefined;
 
-/**
- * Standardizes URLs by checking for slashes at the start and end of URLs, 
- * adding slashes to the end if not present and removing slashes at the start if present.
- * @param inputURL The URL to standardize.
- * @returns a standardized URL.
- */
-function standardizeURL(inputURL : string | undefined) : string | undefined {
-    if (typeof inputURL === "undefined") {
-        return inputURL;
-    }
-	inputURL = <string>inputURL;
-	let outputURL : string = inputURL;
 
-	if (inputURL.startsWith("/") || inputURL.startsWith("\\")) {
-		//Slices off the first letter of the string
-		outputURL = outputURL.slice(1);
-	};
-	if (!(inputURL.endsWith("/") || inputURL.endsWith("\\"))) {
-		outputURL = outputURL + "/";
-	}
-
-	return outputURL;
-};
 const getStorage = krl.Function([], async function() : Promise<string | undefined> {
 	return this.rsCtx.getEnt(STORAGE_ENT_NAME);
 });
@@ -179,24 +157,6 @@ async function createFileObject(data : Blob, destinationURL : string, functionNa
     let file = new File([data], <string>fileName)
     return file;
 }
-
-//Used to check the size of a file without loading it into memory.
-/*async function getFileSize(url: string): Promise<number> {
-    try {
-        if (url.startsWith('http://') || url.startsWith('https://')) {
-            const response = await axios.head(url);
-            const contentLength = response.headers['content-length'];
-    
-            return contentLength ? parseInt(contentLength, 10) : -1;
-        } else {
-            const stats = fs.statSync(url);
-            return stats.size;
-        }
-    } catch (error) {
-        console.error('An error occurred:', error);
-        return -1;
-    }
-}*/
 
 const authenticate = krl.Action([], async function authenticate() {
     // A key pair is needed for encryption.
