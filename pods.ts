@@ -219,6 +219,7 @@ const connectStorage = krl.Action(["storageURL", "clientID", "clientSecret", "to
 
 	await authenticate(this, []);
 	if (!await hasValidAccessToken(this, [])) {
+        await disconnectStorage(this, []);
 		throw MODULE_NAME + ":authenticate could not authenticate.";
 	}
 
