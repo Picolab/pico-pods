@@ -1,1 +1,1 @@
-This folder contains a simple example module that works with https://jsonplaceholder.typicode.com.
+This folder contains a simple example module for the pico engine that works with https://jsonplaceholder.typicode.com.
