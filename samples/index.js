@@ -283,7 +283,7 @@ function getItemType(itemName) {
     return 'other';
 }
 
-async function backAction() {
+function backAction() {
     if (lastURL.length == 0) {
         fetchAndDisplayItems();
     } else {
@@ -528,9 +528,9 @@ function downloadAction() {
     document.body.removeChild(link);
 }
 
-async function grantAccessAction() {
+function grantAccessAction() {
     const access = document.getElementById('grantAccessToggle').textContent;
-    if (access == 'Make public') {
+    if (access == 'Make Public') {
         setPublicAccess(getCurrentPath(), true);
     } else {
         setPublicAccess(getCurrentPath(), false);
@@ -552,13 +552,12 @@ function grantAccessToAction() {
     const submitNewGrantAccessRequest = () => {
         let webID = input.value.trim();
         if (webID) {
-            console.log(`Granting access to: ${webID}`); 
-            grantAccessTo(getCurrentPath(), webID).then(() => {
-                console.log(`Access grant to ${webID} successfully!`);
-                alert(`Access grant to ${webID} successfully!`);
-                input.remove(); // Remove the input field
-                grantAccessBtn.style.display = ''; // Show the button again
-            })
+            console.log(`Granting access to: ${webID}`);
+            setAgentAccess(webID, true);
+            console.log(`Access grant to ${webID} successfully!`);
+            alert(`Access grant to ${webID} successfully!`);
+            input.remove(); // Remove the input field
+            grantAccessBtn.style.display = ''; // Show the button again
         }
     };
 
@@ -601,7 +600,6 @@ async function removeAccessFromAction() {
         defaultOption.textContent = 'Select a webID';
         defaultOption.value = '';
         select.appendChild(defaultOption);
-        console.log(webIDs.length);
         webIDs.slice(1).forEach(id => { // Skip the owner's WebID
             const option = document.createElement('option');
             option.value = id;
@@ -617,13 +615,11 @@ async function removeAccessFromAction() {
             const webID = select.value;
             if (webID) {
                 console.log(`Removing access from ${webID}`);
-                removeAccessFrom(webID)
-                .then(() => {
-                    console.log(`Remove access from ${webID} successfully!`);
-                    alert(`Remove access from ${webID} successfully!`);
-                    container.remove(); 
-                    removeAccessBtn.style.display = 'inline-block'; 
-                })
+                setAgentAccess(webID, false);
+                console.log(`Remove access from ${webID} successfully!`);
+                alert(`Remove access from ${webID} successfully!`);
+                container.remove(); 
+                removeAccessBtn.style.display = 'inline-block'; 
             } else {
                 alert('Please select a WebID.');
             }
@@ -758,7 +754,7 @@ function addPhoto(url, filename) {
     });
 }
 
-async function setPublicAccess(url, read) {
+function setPublicAccess(url, read) {
     const data = {
         resourceURL: url,
         read: read,
@@ -798,17 +794,18 @@ async function getPublicAccess(url = getCurrentPath()) {
     }
     const json = await response.json();
     if (json.directives[0].name == 'true') {
-        return 'Make private';
+        return 'Make Private';
     }
-    return 'Make public';
+    return 'Make Public';
 }
 
-async function grantAccessTo(resourceURL, webID) {
+function setAgentAccess(webID, read) {
     const data = {
-        resourceURL: resourceURL,
+        resourceURL: getCurrentPath(),
         webID: webID,
+        read: read
     };
-    fetch(`${getPicoURL()}1556/sample_app/grant_agent_access`, {
+    fetch(`${getPicoURL()}1556/sample_app/set_agent_access`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -817,12 +814,12 @@ async function grantAccessTo(resourceURL, webID) {
     })
     .then(response => {
         if (!response.ok) {
-            throw new Error(`Grant Access to ${webID} failed: ${response.status}`);
+            throw new Error(`Set ${webID} access failed: ${response.status}`);
         }
     })
     .catch(error => {
-        console.error('Error granting access:', error);
-        alert(`Failed to grant access to ${webID}. Please check the console log.`);
+        console.error('Error setting agent access:', error);
+        alert(`Failed to set ${webID} access. Please check the console log.`);
     });
 }
 
@@ -836,30 +833,7 @@ async function getAllAgentAccess(url = getCurrentPath()) {
     return json.directives[0].name;
 }
 
-async function removeAccessFrom(webID) {
-    const data = {
-        resourceURL: getCurrentPath(),
-        webID: webID,
-    };
-    fetch(`${getPicoURL()}1556/sample_app/remove_agent_access`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error(`Grant Access to ${webID} failed: ${response.status}`);
-        }
-    })
-    .catch(error => {
-        console.error('Error removing access:', error);
-        alert(`Failed to remove access from ${webID}. Please check the console log.`);
-    });
-}
-
-async function copyPhoto(destinationURL) {
+function copyPhoto(destinationURL) {
     const data = {
         originURL: getCurrentPath(),
         destinationURL: destinationURL
