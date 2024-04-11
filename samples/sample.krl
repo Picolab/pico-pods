@@ -79,8 +79,8 @@ ruleset sample_app {
 		pods:removeAgentAccess(event:attrs.get("resourceURL"), event:attrs.get("webID"))
 	}
 	
-	rule get_access {
-		select when sample_app get_access
+	rule get_public_access {
+		select when sample_app get_public_access
 		send_directive(pods:getPublicAccess(event:attrs.get("resourceURL")))
 	}
 
