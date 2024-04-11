@@ -73,14 +73,13 @@ document.addEventListener("DOMContentLoaded", async function() {
         const file = event.target.files[0];
         if (file) {
 
-            const filename = file.name;
             // Create a FileReader to read the file
             const reader = new FileReader();
             
             reader.onloadend = function() {
                 // reader.result contains the data URL
                 const dataURL = reader.result;
-                addPhoto(dataURL, filename)
+                addPhoto(dataURL);
             };
             
             // Read the file as a data URL
@@ -329,10 +328,9 @@ function addPhotoAction2() {
 
         const submitNewPhoto = () => {
             const url = input.value.trim();
-            const filename = url.split('/').pop();
             if (url) {
                 console.log(`Adding file from: ${url}`); 
-                addPhoto(url, filename);
+                addPhoto(url);
                 input.remove(); // Remove the input field
                 container.remove(); // Remove the two extra buttons
                 addPhotoBtn.style.display = ''; // Show the add photo button again
@@ -382,7 +380,7 @@ function addPhotoAction() {
         const filename = url.split('/').pop();
         if (url) {
             console.log(`Adding file from: ${url}`); 
-            addPhoto(url, filename);
+            addPhoto(url);
             input.remove(); // Remove the input field
             addPhotoBtn.style.display = ''; // Show the button again
             fetchAndDisplayItems(getCurrentPath(), true); // Refresh the contents of the folder
@@ -730,11 +728,10 @@ async function prefetchDataURLs(items) {
     return urlMap;
 }
 
-function addPhoto(url, filename) {
-    const storeLocation = getCurrentPath() + filename;
+function addPhoto(url) {
     const data = {
         originURL: url,
-        destinationURL: storeLocation
+        destinationURL: getCurrentPath()
     };
     fetch(`${getPicoURL()}1556/sample_app/store_file`, {
         method: 'POST',
@@ -839,7 +836,7 @@ async function copyPhoto(destinationURL) {
     }
     const hasSubfolder = await checkFolder(destinationURL, false);
     if (!hasSubfolder) {
-        alert('Folder not found. Please create the corresponding folder first.');
+        alert('Subfolder(s) not found. Please create corresponding subfolder(s) first.');
         return;
     }
     const data = {
