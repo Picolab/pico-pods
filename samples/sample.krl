@@ -28,7 +28,7 @@ ruleset sample_app {
 
 	rule store_file {
 		select when sample_app store_file
-		pods:overwrite(event:attrs.get("originURL"), event:attrs.get("destinationURL"), event:attrs.get("doAutoAuth"))
+		pods:store(event:attrs.get("originURL"), event:attrs.get("destinationURL"), event:attrs.get("doAutoAuth"))
 	}
 
 	rule overwrite_file {
