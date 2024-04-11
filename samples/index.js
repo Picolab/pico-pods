@@ -501,9 +501,7 @@ function copyAction() {
     input.addEventListener('keypress', async function(e) {
         if (e.key === 'Enter') {
             if (input.value) {
-                await copyPhoto(input.value); 
-                console.log(`Copy photo to ${input.value} successfully!`);
-                alert(`Copy photo to ${input.value} successfully!`);
+                copyPhoto(input.value); 
                 input.remove(); 
                 copyBtn.style.display = 'inline-block'; 
             } else {
@@ -670,7 +668,7 @@ async function addFolder(folderName) {
         folderName += '/';
     }
     const newPath = getCurrentPath() + folderName;
-    const hasSubfolder = await checkSubfolder(newPath);
+    const hasSubfolder = await checkFolder(newPath, true);
     if (!hasSubfolder) {
         alert('Subfolder(s) not found. Please create corresponding subfolder(s) first.');
         return;
@@ -689,10 +687,12 @@ async function addFolder(folderName) {
     });
 }
 
-async function checkSubfolder(url) {
-    const lastIndex = url.lastIndexOf('/', url.lastIndexOf('/') - 1);
-    const subfolder = url.substring(0, lastIndex + 1);
-    const items = await listItems(subfolder);
+async function checkFolder(url, isSubfolder) {
+    if (isSubfolder) {
+        const lastIndex = url.lastIndexOf('/', url.lastIndexOf('/') - 1);
+        url = url.substring(0, lastIndex + 1);
+    }
+    const items = await listItems(url);
     if (items == null) {
         return false;
     }
@@ -778,7 +778,6 @@ function setPublicAccess(url, read) {
             if (!url.endsWith('/')) document.getElementById('grantAccessToggle').textContent = 'Make Public';
             console.log(`${getCurrentPath()} is now private.`)
         }
-
     })
     .catch(error => {
         console.error('Error changing photo public access:', error);
@@ -833,7 +832,16 @@ async function getAllAgentAccess(url = getCurrentPath()) {
     return json.directives[0].name;
 }
 
-function copyPhoto(destinationURL) {
+async function copyPhoto(destinationURL) {
+    if (!destinationURL.endsWith('/')) {
+        alert('You are only allow to copy a photo to a folder. Please ensure the destination of the URL is a folder and there is a slash at the end.');
+        return;
+    }
+    const hasSubfolder = await checkFolder(destinationURL, false);
+    if (!hasSubfolder) {
+        alert('Folder not found. Please create the corresponding folder first.');
+        return;
+    }
     const data = {
         originURL: getCurrentPath(),
         destinationURL: destinationURL
@@ -849,6 +857,8 @@ function copyPhoto(destinationURL) {
         if (!response.ok) {
             throw new Error(`Copy photo failed: ${response.status}`);
         }
+        console.log(`Copy photo to ${destinationURL} successfully!`);
+        alert(`Copy photo to ${destinationURL} successfully!`);
     })
     .catch(error => {
         console.error('Error copying photo:', error);
