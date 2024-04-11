@@ -509,7 +509,8 @@ const getAllAgentAccess = krl.Function(["resourceURL", "doAutoAuth"], async func
     return agents;
   });
 
-const grantAgentAccess = krl.Action(["resourceURL", "webID", "doAutoAuth"], async function(resourceURL : string, webID : string, doAutoAuth : Boolean = true) {
+const setAgentAccess = krl.Action(["resourceURL", "webID", "read", "write", "append", "doAutoAuth"], 
+                    async function(resourceURL : string, webID : string, read : boolean, write : boolean = false, append : boolean = false, doAutoAuth : Boolean = true) {
     if (doAutoAuth) {
         if (!await autoAuth(this, [])) {
             throw MODULE_NAME + ":grantAgentAccess could not validate Pod access token.";
@@ -518,28 +519,7 @@ const grantAgentAccess = krl.Action(["resourceURL", "webID", "doAutoAuth"], asyn
     universalAccess.setAgentAccess(
         resourceURL,       // resource  
         webID,   // agent
-        { read: true, write: false },
-        { fetch: authFetch }                      // fetch function from authenticated session
-      ).then((agentAccess) => {
-        this.log.debug(`For resource::: ${resourceURL}`);
-        if (agentAccess === null) {
-            this.log.debug(`Could not load ${webID}'s access details.`);
-        } else {
-            this.log.debug(`${webID}'s Access:: ${JSON.stringify(agentAccess)}`);
-        }
-      });
-});
-
-const removeAgentAccess = krl.Action(["resourceURL", "webID", "doAutoAuth"], async function(resourceURL : string, webID : string, doAutoAuth : Boolean = true) {
-    if (doAutoAuth) {
-        if (!await autoAuth(this, [])) {
-            throw MODULE_NAME + ":removeAgentAccess could not validate Pod access token.";
-        }
-    }
-    universalAccess.setAgentAccess(
-        resourceURL,       // resource  
-        webID,   // agent
-        { read: false, write: false},
+        { read: read, write: write, append: append },
         { fetch: authFetch }                      // fetch function from authenticated session
       ).then((agentAccess) => {
         this.log.debug(`For resource::: ${resourceURL}`);
@@ -618,8 +598,7 @@ const pods: krl.Module = {
 
 	authenticate: authenticate,
     getAllAgentAccess: getAllAgentAccess,
-	grantAgentAccess: grantAgentAccess,
-	removeAgentAccess: removeAgentAccess,
+    setAgentAccess: setAgentAccess,
     getPublicAccess: getPublicAccess,
     setPublicAccess: setPublicAccess,
 }
