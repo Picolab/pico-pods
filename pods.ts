@@ -37,7 +37,6 @@ const getStorage = krl.Function([], async function() : Promise<string | undefine
 	return this.rsCtx.getEnt(STORAGE_ENT_NAME);
 });
 const setStorage = krl.Action(["new_URL"], async function(new_URL : string | undefined) {
-	//new_URL = standardizeURL(new_URL);
 	this.rsCtx.putEnt(STORAGE_ENT_NAME, new_URL);
 });
 const getClientID = krl.Function([], async function() : Promise<string | undefined> {
@@ -262,16 +261,8 @@ const store = krl.Action(["originURL", "destinationURL", "doAutoAuth"],
         }
     }
 	
-	//Used to check file size prior to loading a file into memory
-	//Considered unnecessary
-	/*const size = getFileSize(fileURL);
-    if (await size / (1024*1024) > LIMIT) {
-        throw "The file size exceed 500 MB";
-    }*/
-	
     let file : File = await getNonPodFile(this, [originURL, destinationURL, FUNCTION_NAME])
 
-    //let checkedDestinationURL = checkFileURL(destinationURL, file.name);
 	this.log.debug("Destination: " + destinationURL);
 
     saveFileInContainer(
@@ -304,7 +295,6 @@ const overwrite = krl.Action(["originURL", "destinationURL", "doAutoAuth"],
 	
     let file : File = await getNonPodFile(this, [originURL, destinationURL, FUNCTION_NAME]);
 
-    //let checkedDestinationURL = checkFileURL(destinationURL, file.name);
 	this.log.debug("Destination: " + destinationURL);
 
     overwriteFile(
@@ -576,7 +566,8 @@ const getPublicAccess = krl.Function(["resourceURL", "doAutoAuth"], async functi
     }
 });
 
-const grantPublicAccess = krl.Action(["resourceURL", "doAutoAuth"], async function(resourceURL: string, doAutoAuth : Boolean = true) {
+const setPublicAccess = krl.Action(["resourceURL", "read", "write", "append", "doAutoAuth"], 
+                    async function(resourceURL: string, read : boolean, write : boolean = false, append : boolean = false, doAutoAuth : Boolean = true) {   
     if (doAutoAuth) {
         if (!await autoAuth(this, [])) {
             throw MODULE_NAME + ":grantPublicAccess could not validate Pod access token.";
@@ -584,34 +575,17 @@ const grantPublicAccess = krl.Action(["resourceURL", "doAutoAuth"], async functi
     }
     universalAccess.setPublicAccess(
         resourceURL,  // Resource
-        { read: true, write: false },    // Access object
+        { read: read, write: write, append: append },    // Access object
         { fetch: authFetch }                 // fetch function from authenticated session
-      ).then((newAccess) => {
+    ).then((newAccess) => {
         if (newAccess === null) {
           this.log.debug("Could not load access details for this Resource.");
         } else {
           this.log.debug("Returned Public Access:: ", JSON.stringify(newAccess));
         }
-      });
+    });
 });
-const removePublicAccess = krl.Action(["resourceURL", "doAutoAuth"], async function removeAccess(resourceURL: string, doAutoAuth : Boolean = true) {
-    if (doAutoAuth) {
-        if (!await autoAuth(this, [])) {
-            throw MODULE_NAME + ":removePublicAccess could not validate Pod access token.";
-        }
-    }
-    universalAccess.setPublicAccess(
-        resourceURL,  // Resource
-        { read: false, write: false },    // Access object
-        { fetch: authFetch }                 // fetch function from authenticated session
-      ).then((newAccess) => {
-        if (newAccess === null) {
-          this.log.debug("Could not load access details for this Resource.");
-        } else {
-          this.log.debug("Returned Public Access:: ", JSON.stringify(newAccess));
-        }
-      });
-});
+
 
 
 
@@ -647,8 +621,7 @@ const pods: krl.Module = {
 	grantAgentAccess: grantAgentAccess,
 	removeAgentAccess: removeAgentAccess,
     getPublicAccess: getPublicAccess,
-	grantPublicAccess: grantPublicAccess,
-	removePublicAccess: removePublicAccess,
+    setPublicAccess: setPublicAccess,
 }
 
 export default pods;
