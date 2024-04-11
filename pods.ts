@@ -277,6 +277,8 @@ const store = krl.Action(["originURL", "destinationURL", "doAutoAuth"],
         this.log.error("Error uploading file: ", error.message);
     });
 });
+
+
 const overwrite = krl.Action(["originURL", "destinationURL", "doAutoAuth"], 
                             async function(
                                 originURL : string, 
@@ -345,10 +347,10 @@ const copyFile = krl.Action(["originURL", "destinationURL", "doAutoAuth"],
         this.log.debug(`The file is ${isRawData(file) ? "not " : ""}a dataset.`);
 
         if (destinationURL.startsWith('http://') || destinationURL.startsWith('https://')) {
-
-            overwriteFile(
+            let filename = originURL.split('/').pop();
+            saveFileInContainer(
                 destinationURL,
-                file,
+                new File([file], `${filename}`, { type : `${getContentType(file)}`}),
                 { fetch: authFetch }
             )
             .then(() => {
@@ -357,18 +359,19 @@ const copyFile = krl.Action(["originURL", "destinationURL", "doAutoAuth"],
             .catch(error => {
                 this.log.error("Error copying file:", error);
             });
-            } else {
-                const arrayBuffer = await file.arrayBuffer();
-                const buffer = Buffer.from(arrayBuffer);
+		
+        } else {
+            const arrayBuffer = await file.arrayBuffer();
+            const buffer = Buffer.from(arrayBuffer);
                 
-                // Writing the buffer to a file
-                fs.writeFile(destinationURL, buffer, (err : Error | null) => {
+            // Writing the buffer to a file
+            fs.writeFile(destinationURL, buffer, (err : Error | null) => {
                 if (err) {
                     this.log.error('Failed to save the file:', err);
                 } else {
                     this.log.debug('File saved successfully.');
                 }
-                });
+            });
         }
     } catch(err) {
         this.log.error((err as Error).message);
