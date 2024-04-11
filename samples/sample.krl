@@ -69,16 +69,11 @@ ruleset sample_app {
 		send_directive(pods:getAllAgentAccess(event:attrs.get("resourceURL")))
 	}
 
-	rule grant_agent_access {
-		select when sample_app grant_agent_access
-		pods:grantAgentAccess(event:attrs.get("resourceURL"), event:attrs.get("webID"))
+	rule set_agent_access {
+		select when sample_app set_agent_access
+		pods:setAgentAccess(event:attrs.get("resourceURL"), event:attrs.get("webID"), event:attrs.get("read"), event:attrs.get("write"), event:attrs.get("append"))
 	}
 
-	rule remove_agent_access {
-		select when sample_app remove_agent_access
-		pods:removeAgentAccess(event:attrs.get("resourceURL"), event:attrs.get("webID"))
-	}
-	
 	rule get_public_access {
 		select when sample_app get_public_access
 		send_directive(pods:getPublicAccess(event:attrs.get("resourceURL")))
