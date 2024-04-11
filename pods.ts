@@ -23,7 +23,6 @@ import * as fs from "fs";
 
 const STORAGE_ENT_NAME : string = "__pods_storageURL";
 const MODULE_NAME : string = "pods";
-const MAX_FILE_SIZE : number = 500;
 const CLIENT_ID_ENT_NAME : string = "__pods_clientID";
 const CLIENT_SECRET_ENT_NAME : string = "__pods_clientSecret";
 const TOKEN_URL_ENT_NAME : string = "__pods_tokenURL";
@@ -141,8 +140,7 @@ async function createFileObject(data : Blob, destinationURL : string, functionNa
         throw MODULE_NAME + ":" + functionName + " detected a file name of length 0.";
     }
     
-
-    let file = new File([data], <string>fileName)
+    let file = new File([data], <string>fileName);
     return file;
 }
 
@@ -261,13 +259,14 @@ const store = krl.Action(["originURL", "destinationURL", "doAutoAuth"],
         }
     }
 	
-    let file : File = await getNonPodFile(this, [originURL, destinationURL, FUNCTION_NAME])
-
+    //let file : File = await getNonPodFile(this, [originURL, destinationURL, FUNCTION_NAME])
+    let file : Blob = await getBlob(originURL);
+    let filename = originURL.split('/').pop();
 	this.log.debug("Destination: " + destinationURL);
-
+    
     saveFileInContainer(
         destinationURL,
-        file,
+        new File([file], `${filename}`),
         { fetch: authFetch }
     )
     .then(() => {
@@ -359,7 +358,7 @@ const copyFile = krl.Action(["originURL", "destinationURL", "doAutoAuth"],
             .catch(error => {
                 this.log.error("Error copying file:", error);
             });
-		
+
         } else {
             const arrayBuffer = await file.arrayBuffer();
             const buffer = Buffer.from(arrayBuffer);
