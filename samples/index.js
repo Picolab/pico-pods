@@ -271,7 +271,7 @@ async function toggleControlPanel(showDefaultButtons) {
         addButton('deletePhoto', 'Delete photo', deletePhotoAction);
         addButton('copy', 'Copy', copyAction);
         addButton('downloand', 'Download', downloadAction);
-        addButton('grantAccessToggle', await getAccess(), grantAccessAction);
+        addButton('grantAccessToggle', await getPublicAccess(), grantAccessAction);
         addButton('grantAccessTo', 'Grant Access to', grantAccessToAction);
         addButton('removeAccessFrom', 'Remove Access from', removeAccessFromAction);
     }
@@ -332,11 +332,11 @@ function addPhotoAction2() {
             const filename = url.split('/').pop();
             if (url) {
                 console.log(`Adding file from: ${url}`); 
-                addPhoto(url, filename).then(() => {
-                    input.remove(); // Remove the input field
-                    container.remove(); // Remove the two extra buttons
-                    addPhotoBtn.style.display = ''; // Show the add photo button again
-                })
+                addPhoto(url, filename);
+                input.remove(); // Remove the input field
+                container.remove(); // Remove the two extra buttons
+                addPhotoBtn.style.display = ''; // Show the add photo button again
+                fetchAndDisplayItems(getCurrentPath(), true); // Refresh the contents of the folder
             }
         };
     
@@ -382,11 +382,10 @@ function addPhotoAction() {
         const filename = url.split('/').pop();
         if (url) {
             console.log(`Adding file from: ${url}`); 
-            addPhoto(url, filename).then(() => {
-                input.remove(); // Remove the input field
-                addPhotoBtn.style.display = ''; // Show the button again
-                fetchAndDisplayItems(getCurrentPath(), true); // Refresh the contents of the folder
-            })
+            addPhoto(url, filename);
+            input.remove(); // Remove the input field
+            addPhotoBtn.style.display = ''; // Show the button again
+            fetchAndDisplayItems(getCurrentPath(), true); // Refresh the contents of the folder
         }
     };
 
@@ -531,10 +530,10 @@ function downloadAction() {
 
 async function grantAccessAction() {
     const access = document.getElementById('grantAccessToggle').textContent;
-    if (access == 'Private') {
-        grantAccess(getCurrentPath());
+    if (access == 'Make public') {
+        setPublicAccess(getCurrentPath(), true);
     } else {
-        removeAccess(getCurrentPath());
+        setPublicAccess(getCurrentPath(), false);
     }
 }
 
@@ -735,7 +734,7 @@ async function prefetchDataURLs(items) {
     return urlMap;
 }
 
-async function addPhoto(url, filename) {
+function addPhoto(url, filename) {
     const storeLocation = getCurrentPath() + filename;
     const data = {
         originURL: url,
@@ -752,7 +751,6 @@ async function addPhoto(url, filename) {
         if (!response.ok) {
             throw new Error(`Add photo failed: ${response.status}`);
         }
-        fetchAndDisplayItems(getCurrentPath(), true);
     })
     .catch(error => {
         console.error('Error adding photo:', error);
@@ -760,51 +758,49 @@ async function addPhoto(url, filename) {
     });
 }
 
-async function grantAccess(url) {
-    const event = `${getPicoURL()}1556/sample_app/grant_access?resourceURL=${url}`;
-    fetch(event)
+async function setPublicAccess(url, read) {
+    const data = {
+        resourceURL: url,
+        read: read,
+    };
+    fetch(`${getPicoURL()}1556/sample_app/set_public_access`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+    })
     .then(response => {
         if (!response.ok) {
-            throw new Error(`Make photo public failed: ${response.status}`);
+            throw new Error(`Change photo public access failed: ${response.status}`);
         }
-        // Check if it is a folder or photo. The grant/remove access public only available in photo view.
-        if (!url.endsWith('/')) document.getElementById('grantAccessToggle').textContent = 'Public';
-        console.log(`${getCurrentPath()} is now public.`)
+        // Check if it is a folder or photo. The button to grant/remove public access only available in the photo view.
+        if (read == true) {
+            if (!url.endsWith('/')) document.getElementById('grantAccessToggle').textContent = 'Make Private';
+            console.log(`${getCurrentPath()} is now public.`);
+        } else {
+            if (!url.endsWith('/')) document.getElementById('grantAccessToggle').textContent = 'Make Public';
+            console.log(`${getCurrentPath()} is now private.`)
+        }
+
     })
     .catch(error => {
-        console.error('Error making photo public:', error);
-        alert('Failed to make the photo public. Please check the console log.');
-    })
+        console.error('Error changing photo public access:', error);
+        alert('Failed to make the change the photo public access. Please check the console log.');
+    });
 }
 
-async function removeAccess(url) {
-    const event = `${getPicoURL()}1556/sample_app/remove_access?resourceURL=${url}`;
-    fetch(event)
-    .then(response => {
-        if (!response.ok) {
-            throw new Error(`Make photo private failed: ${response.status}`);
-        }
-        // Check if it is a folder or photo. The grant/remove access public only available in photo view.
-        if (!url.endsWith('/')) document.getElementById('grantAccessToggle').textContent = 'Private';
-        console.log(`${getCurrentPath()} is now private.`)
-    })
-    .catch(error => {
-        console.error('Error making photo private:', error);
-        alert('Failed to make the photo private. Please check the console log.');
-    })
-}
-
-async function getAccess(url = getCurrentPath()) {
-    const event = `${getPicoURL()}1556/sample_app/get_access?resourceURL=${url}`;
+async function getPublicAccess(url = getCurrentPath()) {
+    const event = `${getPicoURL()}1556/sample_app/get_public_access?resourceURL=${url}`;
     const response = await fetch(event);
     if (!response.ok) {
         throw new Error(`Get photo access failed: ${response.status}`);
     }
     const json = await response.json();
-    if (json.directives[0].name == 'false') {
-        return 'Private';
+    if (json.directives[0].name == 'true') {
+        return 'Make private';
     }
-    return 'Public';
+    return 'Make public';
 }
 
 async function grantAccessTo(resourceURL, webID) {
@@ -902,7 +898,7 @@ async function setUpMyPhotosFolder() {
                 if (!addFolderResponse.ok) {
                     throw new Error(`Failed to create folder: myPhotos: ${response.status}`);
                 }
-                grantAccess(photosFolderURL);
+                setPublicAccess(photosFolderURL,true);
             })
         } 
         fetchAndDisplayItems(photosFolderURL);
@@ -998,7 +994,7 @@ async function getPhotos(items, currentPath, photos, isShared) {
 }
 
 async function checkAccess(url) {
-    const access = await getAccess(url);
+    const access = await getPublicAccess(url);
     const webIDs = await getAllAgentAccess(url);
     if (access == 'Public' || webIDs.length > 1) {
         return true;
