@@ -114,19 +114,19 @@ async function getBlob(originURL : string) {
     }
     return data;
 }
-async function createFileObject(data : Blob, destinationURL : string, functionName : string) : Promise<File> {
+async function createFileObject(data : Blob, url : string, functionName : string) : Promise<File> {
     let fileName : string;
 
     //Get file name
     //Forward Slash Filename
-    let fS_filename = destinationURL.split('/').pop();
+    let fS_filename = url.split('/').pop();
     //Backward Slash Filename
-    let bS_filename = destinationURL.split('\\').pop();
+    let bS_filename = url.split('\\').pop();
     if (typeof fS_filename === "undefined" && typeof bS_filename === "undefined") {
-        fileName = destinationURL;
-    } else if (typeof fS_filename === "undefined") {
+        fileName = url;
+    } else if (typeof fS_filename === "undefined" || fS_filename.length == 0) {
         fileName = <string>bS_filename;
-    } else if (typeof bS_filename === "undefined") {
+    } else if (typeof bS_filename === "undefined" || bS_filename.length == 0) {
         fileName = fS_filename;
     } else if (fS_filename.length > bS_filename.length) {
         fileName = bS_filename;
@@ -259,14 +259,38 @@ const store = krl.Action(["originURL", "destinationURL", "doAutoAuth"],
         }
     }
 	
-    //let file : File = await getNonPodFile(this, [originURL, destinationURL, FUNCTION_NAME])
-    let file : Blob = await getBlob(originURL);
-    let filename = originURL.split('/').pop();
-	this.log.debug("Destination: " + destinationURL);
+    let file : File = await getNonPodFile(this, [originURL, destinationURL, FUNCTION_NAME])
+
+    //(Rushed) code to keep it in line with overwrite() and have file names at the end of destination URLs.
+    let fS_filename : string | undefined = destinationURL.split("/").pop();
+    let bS_filename : string | undefined = destinationURL.split("\\").pop();
+    let newDestinationURL : string = destinationURL;
+    if (typeof fS_filename === "undefined" && typeof bS_filename === "undefined") {
+        newDestinationURL = destinationURL;
+    } else if (typeof fS_filename === "undefined" || fS_filename.length == 0) {
+        let destArray : Array<string> = destinationURL.split("\\");
+        destArray.pop();
+        newDestinationURL = <string>destArray.join("\\");
+    } else if (typeof bS_filename === "undefined" || bS_filename.length == 0) {
+        let destArray : Array<string> = destinationURL.split("/");
+        destArray.pop();
+        newDestinationURL = <string>destArray.join("/");
+    } else if (fS_filename.length > bS_filename.length) {
+        let destArray : Array<string> = destinationURL.split("\\");
+        destArray.pop();
+        newDestinationURL = <string>destArray.join("\\");
+    } else {
+        let destArray : Array<string> = destinationURL.split("/");
+        destArray.pop();
+        newDestinationURL = <string>destArray.join("/");
+    }
+    newDestinationURL = newDestinationURL + "/";
+    this.log.debug("Destination: " + newDestinationURL);
+    
     
     saveFileInContainer(
-        destinationURL,
-        new File([file], `${filename}`),
+        newDestinationURL,
+        file,
         { fetch: authFetch }
     )
     .then(() => {
