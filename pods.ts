@@ -262,6 +262,7 @@ const store = krl.Action(["originURL", "destinationURL", "doAutoAuth"],
     let file : File = await getNonPodFile(this, [originURL, destinationURL, FUNCTION_NAME])
 
     let newDestinationURL : string = getDestinationURLWithoutFileName(destinationURL);
+    this.log.debug("Destination: " + newDestinationURL);
     
     saveFileInContainer(
         newDestinationURL,
@@ -342,7 +343,6 @@ function getDestinationURLWithoutFileName(destinationURL : string) : string {
         newDestinationURL = <string>destArray.join("/");
     }
     newDestinationURL = newDestinationURL + "/";
-    this.log.debug("Destination: " + newDestinationURL);
     return newDestinationURL;
 }
 
@@ -373,6 +373,7 @@ const copyFile = krl.Action(["originURL", "destinationURL", "doAutoAuth"],
         this.log.debug(`The file is ${isRawData(file) ? "not " : ""}a dataset.`);
 
         let newDestinationURL = getDestinationURLWithoutFileName(destinationURL);
+        this.log.debug("Destination: " + newDestinationURL);
 
         if (newDestinationURL.startsWith('http://') || newDestinationURL.startsWith('https://')) {
             let newFile = await createFileObject(file, destinationURL, "copyFile");
