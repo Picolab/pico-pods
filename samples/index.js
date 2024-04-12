@@ -279,7 +279,7 @@ async function toggleControlPanel(showDefaultButtons) {
 
 function getItemType(itemName) {
     if (itemName.endsWith('/')) return 'folder';
-    if (['.jpg', '.png', '.jpeg'].some(ext => itemName.endsWith(ext))) return 'photo';
+    if (['.jpg', '.png', '.jpeg'].some(ext => itemName.toLowerCase().endsWith(ext))) return 'photo';
     return 'other';
 }
 
