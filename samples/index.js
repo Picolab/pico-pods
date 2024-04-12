@@ -75,11 +75,12 @@ document.addEventListener("DOMContentLoaded", async function() {
 
             // Create a FileReader to read the file
             const reader = new FileReader();
+			const filename = file.name;
             
             reader.onloadend = function() {
                 // reader.result contains the data URL
                 const dataURL = reader.result;
-                addPhoto(dataURL);
+                addPhoto(dataURL, filename);
             };
             
             // Read the file as a data URL
@@ -328,9 +329,10 @@ function addPhotoAction2() {
 
         const submitNewPhoto = () => {
             const url = input.value.trim();
+			const filename = url.split('/').pop();
             if (url) {
                 console.log(`Adding file from: ${url}`); 
-                addPhoto(url);
+                addPhoto(url, filename);
                 input.remove(); // Remove the input field
                 container.remove(); // Remove the two extra buttons
                 addPhotoBtn.style.display = ''; // Show the add photo button again
@@ -380,7 +382,7 @@ function addPhotoAction() {
         const filename = url.split('/').pop();
         if (url) {
             console.log(`Adding file from: ${url}`); 
-            addPhoto(url);
+            addPhoto(url, filename);
             input.remove(); // Remove the input field
             addPhotoBtn.style.display = ''; // Show the button again
             fetchAndDisplayItems(getCurrentPath(), true); // Refresh the contents of the folder
@@ -728,10 +730,11 @@ async function prefetchDataURLs(items) {
     return urlMap;
 }
 
-function addPhoto(url) {
+function addPhoto(url, filename) {
+	const storeLocation = getCurrentPath() + filename;
     const data = {
         originURL: url,
-        destinationURL: getCurrentPath()
+        destinationURL: storeLocation
     };
     fetch(`${getPicoURL()}1556/sample_app/store_file`, {
         method: 'POST',
