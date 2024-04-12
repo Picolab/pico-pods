@@ -372,10 +372,10 @@ const copyFile = krl.Action(["originURL", "destinationURL", "doAutoAuth"],
         this.log.debug( `Fetched a ${getContentType(file)} file from ${getSourceUrl(file)}.`);
         this.log.debug(`The file is ${isRawData(file) ? "not " : ""}a dataset.`);
 
-        let newDestinationURL = getDestinationURLWithoutFileName(destinationURL);
-        this.log.debug("Destination: " + newDestinationURL);
+        if (destinationURL.startsWith('http://') || destinationURL.startsWith('https://')) {
+            let newDestinationURL = getDestinationURLWithoutFileName(destinationURL);
+            this.log.debug("Destination: " + newDestinationURL);
 
-        if (newDestinationURL.startsWith('http://') || newDestinationURL.startsWith('https://')) {
             let newFile = await createFileObject(file, destinationURL, "copyFile");
             saveFileInContainer(
                 newDestinationURL,
@@ -394,7 +394,7 @@ const copyFile = krl.Action(["originURL", "destinationURL", "doAutoAuth"],
             const buffer = Buffer.from(arrayBuffer);
                 
             // Writing the buffer to a file
-            fs.writeFile(newDestinationURL, buffer, (err : Error | null) => {
+            fs.writeFile(destinationURL, buffer, (err : Error | null) => {
                 if (err) {
                     this.log.error('Failed to save the file:', err);
                 } else {
