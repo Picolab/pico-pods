@@ -73,14 +73,14 @@ document.addEventListener("DOMContentLoaded", async function() {
         const file = event.target.files[0];
         if (file) {
 
-            const filename = file.name;
             // Create a FileReader to read the file
             const reader = new FileReader();
+			const filename = file.name;
             
             reader.onloadend = function() {
                 // reader.result contains the data URL
                 const dataURL = reader.result;
-                addPhoto(dataURL, filename)
+                addPhoto(dataURL, filename);
             };
             
             // Read the file as a data URL
@@ -271,7 +271,7 @@ async function toggleControlPanel(showDefaultButtons) {
         addButton('deletePhoto', 'Delete photo', deletePhotoAction);
         addButton('copy', 'Copy', copyAction);
         addButton('downloand', 'Download', downloadAction);
-        addButton('grantAccessToggle', await getAccess(), grantAccessAction);
+        addButton('grantAccessToggle', await getPublicAccess(), grantAccessAction);
         addButton('grantAccessTo', 'Grant Access to', grantAccessToAction);
         addButton('removeAccessFrom', 'Remove Access from', removeAccessFromAction);
     }
@@ -279,11 +279,11 @@ async function toggleControlPanel(showDefaultButtons) {
 
 function getItemType(itemName) {
     if (itemName.endsWith('/')) return 'folder';
-    if (['.jpg', '.png', '.jpeg'].some(ext => itemName.endsWith(ext))) return 'photo';
+    if (['.jpg', '.png', '.jpeg'].some(ext => itemName.toLowerCase().endsWith(ext))) return 'photo';
     return 'other';
 }
 
-async function backAction() {
+function backAction() {
     if (lastURL.length == 0) {
         fetchAndDisplayItems();
     } else {
@@ -329,14 +329,14 @@ function addPhotoAction2() {
 
         const submitNewPhoto = () => {
             const url = input.value.trim();
-            const filename = url.split('/').pop();
+			const filename = url.split('/').pop();
             if (url) {
                 console.log(`Adding file from: ${url}`); 
-                addPhoto(url, filename).then(() => {
-                    input.remove(); // Remove the input field
-                    container.remove(); // Remove the two extra buttons
-                    addPhotoBtn.style.display = ''; // Show the add photo button again
-                })
+                addPhoto(url, filename);
+                input.remove(); // Remove the input field
+                container.remove(); // Remove the two extra buttons
+                addPhotoBtn.style.display = ''; // Show the add photo button again
+                fetchAndDisplayItems(getCurrentPath(), true); // Refresh the contents of the folder
             }
         };
     
@@ -382,11 +382,10 @@ function addPhotoAction() {
         const filename = url.split('/').pop();
         if (url) {
             console.log(`Adding file from: ${url}`); 
-            addPhoto(url, filename).then(() => {
-                input.remove(); // Remove the input field
-                addPhotoBtn.style.display = ''; // Show the button again
-                fetchAndDisplayItems(getCurrentPath(), true); // Refresh the contents of the folder
-            })
+            addPhoto(url, filename);
+            input.remove(); // Remove the input field
+            addPhotoBtn.style.display = ''; // Show the button again
+            fetchAndDisplayItems(getCurrentPath(), true); // Refresh the contents of the folder
         }
     };
 
@@ -502,9 +501,7 @@ function copyAction() {
     input.addEventListener('keypress', async function(e) {
         if (e.key === 'Enter') {
             if (input.value) {
-                await copyPhoto(input.value); 
-                console.log(`Copy photo to ${input.value} successfully!`);
-                alert(`Copy photo to ${input.value} successfully!`);
+                copyPhoto(input.value); 
                 input.remove(); 
                 copyBtn.style.display = 'inline-block'; 
             } else {
@@ -529,12 +526,12 @@ function downloadAction() {
     document.body.removeChild(link);
 }
 
-async function grantAccessAction() {
+function grantAccessAction() {
     const access = document.getElementById('grantAccessToggle').textContent;
-    if (access == 'Private') {
-        grantAccess(getCurrentPath());
+    if (access == 'Make Public') {
+        setPublicAccess(getCurrentPath(), true);
     } else {
-        removeAccess(getCurrentPath());
+        setPublicAccess(getCurrentPath(), false);
     }
 }
 
@@ -553,13 +550,12 @@ function grantAccessToAction() {
     const submitNewGrantAccessRequest = () => {
         let webID = input.value.trim();
         if (webID) {
-            console.log(`Granting access to: ${webID}`); 
-            grantAccessTo(getCurrentPath(), webID).then(() => {
-                console.log(`Access grant to ${webID} successfully!`);
-                alert(`Access grant to ${webID} successfully!`);
-                input.remove(); // Remove the input field
-                grantAccessBtn.style.display = ''; // Show the button again
-            })
+            console.log(`Granting access to: ${webID}`);
+            setAgentAccess(webID, true);
+            console.log(`Access grant to ${webID} successfully!`);
+            alert(`Access grant to ${webID} successfully!`);
+            input.remove(); // Remove the input field
+            grantAccessBtn.style.display = ''; // Show the button again
         }
     };
 
@@ -602,7 +598,6 @@ async function removeAccessFromAction() {
         defaultOption.textContent = 'Select a webID';
         defaultOption.value = '';
         select.appendChild(defaultOption);
-        console.log(webIDs.length);
         webIDs.slice(1).forEach(id => { // Skip the owner's WebID
             const option = document.createElement('option');
             option.value = id;
@@ -618,13 +613,11 @@ async function removeAccessFromAction() {
             const webID = select.value;
             if (webID) {
                 console.log(`Removing access from ${webID}`);
-                removeAccessFrom(webID)
-                .then(() => {
-                    console.log(`Remove access from ${webID} successfully!`);
-                    alert(`Remove access from ${webID} successfully!`);
-                    container.remove(); 
-                    removeAccessBtn.style.display = 'inline-block'; 
-                })
+                setAgentAccess(webID, false);
+                console.log(`Remove access from ${webID} successfully!`);
+                alert(`Remove access from ${webID} successfully!`);
+                container.remove(); 
+                removeAccessBtn.style.display = 'inline-block'; 
             } else {
                 alert('Please select a WebID.');
             }
@@ -675,7 +668,7 @@ async function addFolder(folderName) {
         folderName += '/';
     }
     const newPath = getCurrentPath() + folderName;
-    const hasSubfolder = await checkSubfolder(newPath);
+    const hasSubfolder = await checkFolder(newPath, true);
     if (!hasSubfolder) {
         alert('Subfolder(s) not found. Please create corresponding subfolder(s) first.');
         return;
@@ -694,10 +687,12 @@ async function addFolder(folderName) {
     });
 }
 
-async function checkSubfolder(url) {
-    const lastIndex = url.lastIndexOf('/', url.lastIndexOf('/') - 1);
-    const subfolder = url.substring(0, lastIndex + 1);
-    const items = await listItems(subfolder);
+async function checkFolder(url, isSubfolder) {
+    if (isSubfolder) {
+        const lastIndex = url.lastIndexOf('/', url.lastIndexOf('/') - 1);
+        url = url.substring(0, lastIndex + 1);
+    }
+    const items = await listItems(url);
     if (items == null) {
         return false;
     }
@@ -735,8 +730,8 @@ async function prefetchDataURLs(items) {
     return urlMap;
 }
 
-async function addPhoto(url, filename) {
-    const storeLocation = getCurrentPath() + filename;
+function addPhoto(url, filename) {
+	const storeLocation = getCurrentPath() + filename;
     const data = {
         originURL: url,
         destinationURL: storeLocation
@@ -752,7 +747,6 @@ async function addPhoto(url, filename) {
         if (!response.ok) {
             throw new Error(`Add photo failed: ${response.status}`);
         }
-        fetchAndDisplayItems(getCurrentPath(), true);
     })
     .catch(error => {
         console.error('Error adding photo:', error);
@@ -760,59 +754,12 @@ async function addPhoto(url, filename) {
     });
 }
 
-async function grantAccess(url) {
-    const event = `${getPicoURL()}1556/sample_app/grant_access?resourceURL=${url}`;
-    fetch(event)
-    .then(response => {
-        if (!response.ok) {
-            throw new Error(`Make photo public failed: ${response.status}`);
-        }
-        // Check if it is a folder or photo. The grant/remove access public only available in photo view.
-        if (!url.endsWith('/')) document.getElementById('grantAccessToggle').textContent = 'Public';
-        console.log(`${getCurrentPath()} is now public.`)
-    })
-    .catch(error => {
-        console.error('Error making photo public:', error);
-        alert('Failed to make the photo public. Please check the console log.');
-    })
-}
-
-async function removeAccess(url) {
-    const event = `${getPicoURL()}1556/sample_app/remove_access?resourceURL=${url}`;
-    fetch(event)
-    .then(response => {
-        if (!response.ok) {
-            throw new Error(`Make photo private failed: ${response.status}`);
-        }
-        // Check if it is a folder or photo. The grant/remove access public only available in photo view.
-        if (!url.endsWith('/')) document.getElementById('grantAccessToggle').textContent = 'Private';
-        console.log(`${getCurrentPath()} is now private.`)
-    })
-    .catch(error => {
-        console.error('Error making photo private:', error);
-        alert('Failed to make the photo private. Please check the console log.');
-    })
-}
-
-async function getAccess(url = getCurrentPath()) {
-    const event = `${getPicoURL()}1556/sample_app/get_access?resourceURL=${url}`;
-    const response = await fetch(event);
-    if (!response.ok) {
-        throw new Error(`Get photo access failed: ${response.status}`);
-    }
-    const json = await response.json();
-    if (json.directives[0].name == 'false') {
-        return 'Private';
-    }
-    return 'Public';
-}
-
-async function grantAccessTo(resourceURL, webID) {
+function setPublicAccess(url, read) {
     const data = {
-        resourceURL: resourceURL,
-        webID: webID,
+        resourceURL: url,
+        read: read,
     };
-    fetch(`${getPicoURL()}1556/sample_app/grant_agent_access`, {
+    fetch(`${getPicoURL()}1556/sample_app/set_public_access`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -821,12 +768,57 @@ async function grantAccessTo(resourceURL, webID) {
     })
     .then(response => {
         if (!response.ok) {
-            throw new Error(`Grant Access to ${webID} failed: ${response.status}`);
+            throw new Error(`Change photo public access failed: ${response.status}`);
+        }
+        // Check if it is a folder or photo. The button to grant/remove public access only available in the photo view.
+        if (read == true) {
+            if (!url.endsWith('/')) document.getElementById('grantAccessToggle').textContent = 'Make Private';
+            console.log(`${getCurrentPath()} is now public.`);
+        } else {
+            if (!url.endsWith('/')) document.getElementById('grantAccessToggle').textContent = 'Make Public';
+            console.log(`${getCurrentPath()} is now private.`)
         }
     })
     .catch(error => {
-        console.error('Error granting access:', error);
-        alert(`Failed to grant access to ${webID}. Please check the console log.`);
+        console.error('Error changing photo public access:', error);
+        alert('Failed to make the change the photo public access. Please check the console log.');
+    });
+}
+
+async function getPublicAccess(url = getCurrentPath()) {
+    const event = `${getPicoURL()}1556/sample_app/get_public_access?resourceURL=${url}`;
+    const response = await fetch(event);
+    if (!response.ok) {
+        throw new Error(`Get photo access failed: ${response.status}`);
+    }
+    const json = await response.json();
+    if (json.directives[0].name == 'true') {
+        return 'Make Private';
+    }
+    return 'Make Public';
+}
+
+function setAgentAccess(webID, read) {
+    const data = {
+        resourceURL: getCurrentPath(),
+        webID: webID,
+        read: read
+    };
+    fetch(`${getPicoURL()}1556/sample_app/set_agent_access`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`Set ${webID} access failed: ${response.status}`);
+        }
+    })
+    .catch(error => {
+        console.error('Error setting agent access:', error);
+        alert(`Failed to set ${webID} access. Please check the console log.`);
     });
 }
 
@@ -840,30 +832,16 @@ async function getAllAgentAccess(url = getCurrentPath()) {
     return json.directives[0].name;
 }
 
-async function removeAccessFrom(webID) {
-    const data = {
-        resourceURL: getCurrentPath(),
-        webID: webID,
-    };
-    fetch(`${getPicoURL()}1556/sample_app/remove_agent_access`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error(`Grant Access to ${webID} failed: ${response.status}`);
-        }
-    })
-    .catch(error => {
-        console.error('Error removing access:', error);
-        alert(`Failed to remove access from ${webID}. Please check the console log.`);
-    });
-}
-
 async function copyPhoto(destinationURL) {
+    if (!destinationURL.endsWith('/')) {
+        alert('You are only allow to copy a photo to a folder. Please ensure the destination of the URL is a folder and there is a slash at the end.');
+        return;
+    }
+    const hasSubfolder = await checkFolder(destinationURL, false);
+    if (!hasSubfolder) {
+        alert('Subfolder(s) not found. Please create corresponding subfolder(s) first.');
+        return;
+    }
     const data = {
         originURL: getCurrentPath(),
         destinationURL: destinationURL
@@ -879,6 +857,8 @@ async function copyPhoto(destinationURL) {
         if (!response.ok) {
             throw new Error(`Copy photo failed: ${response.status}`);
         }
+        console.log(`Copy photo to ${destinationURL} successfully!`);
+        alert(`Copy photo to ${destinationURL} successfully!`);
     })
     .catch(error => {
         console.error('Error copying photo:', error);
@@ -902,7 +882,7 @@ async function setUpMyPhotosFolder() {
                 if (!addFolderResponse.ok) {
                     throw new Error(`Failed to create folder: myPhotos: ${response.status}`);
                 }
-                grantAccess(photosFolderURL);
+                setPublicAccess(photosFolderURL,true);
             })
         } 
         fetchAndDisplayItems(photosFolderURL);
@@ -998,7 +978,7 @@ async function getPhotos(items, currentPath, photos, isShared) {
 }
 
 async function checkAccess(url) {
-    const access = await getAccess(url);
+    const access = await getPublicAccess(url);
     const webIDs = await getAllAgentAccess(url);
     if (access == 'Public' || webIDs.length > 1) {
         return true;

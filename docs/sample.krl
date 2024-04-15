@@ -26,12 +26,12 @@ ruleset sample_app {
 		pods:authenticate()
 	}
 
-	rule test_store_file {
+	rule store_file {
 		select when sample_app store_file
-		pods:overwrite(event:attrs.get("originURL"), event:attrs.get("destinationURL"), event:attrs.get("doAutoAuth"))
+		pods:store(event:attrs.get("originURL"), event:attrs.get("destinationURL"), event:attrs.get("doAutoAuth"))
 	}
 
-	rule test_overwrite_file {
+	rule overwrite_file {
 		select when sample_app overwrite_file
 		pods:overwrite(event:attrs.get("originURL"), event:attrs.get("destinationURL"), event:attrs.get("doAutoAuth"))
 	}
@@ -69,28 +69,19 @@ ruleset sample_app {
 		send_directive(pods:getAllAgentAccess(event:attrs.get("resourceURL")))
 	}
 
-	rule grant_agent_access {
-		select when sample_app grant_agent_access
-		pods:grantAgentAccess(event:attrs.get("resourceURL"), event:attrs.get("webID"))
+	rule set_agent_access {
+		select when sample_app set_agent_access
+		pods:setAgentAccess(event:attrs.get("resourceURL"), event:attrs.get("webID"), event:attrs.get("read"), event:attrs.get("write"), event:attrs.get("append"))
 	}
 
-	rule remove_agent_access {
-		select when sample_app remove_agent_access
-		pods:removeAgentAccess(event:attrs.get("resourceURL"), event:attrs.get("webID"))
-	}
-	
-	rule get_access {
-		select when sample_app get_access
+	rule get_public_access {
+		select when sample_app get_public_access
 		send_directive(pods:getPublicAccess(event:attrs.get("resourceURL")))
 	}
 
-	rule grant_access {
-		select when sample_app grant_access
-		pods:grantPublicAccess(event:attrs.get("resourceURL"))
-	}
-	rule remove_access {
-		select when sample_app remove_access
-		pods:removePublicAccess(event:attrs.get("resourceURL"))
+	rule set_public_access {
+		select when sample_app set_public_access 
+		pods:setPublicAccess(event:attrs.get("resourceURL"), event:attrs.get("read"), event:attrs.get("write"), event:attrs.get("append"))
 	}
 	
 	rule ls {
