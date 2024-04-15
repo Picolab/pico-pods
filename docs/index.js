@@ -668,7 +668,7 @@ async function addFolder(folderName) {
         folderName += '/';
     }
     const newPath = getCurrentPath() + folderName;
-    const hasSubfolder = await checkFolder(newPath, true);
+    const hasSubfolder = await checkSubfolder(newPath);
     if (!hasSubfolder) {
         alert('Subfolder(s) not found. Please create corresponding subfolder(s) first.');
         return;
@@ -687,10 +687,12 @@ async function addFolder(folderName) {
     });
 }
 
-async function checkFolder(url, isSubfolder) {
-    if (isSubfolder) {
+async function checkSubfolder(url) {
+    if (url.endsWith('/')) { // if it is a folder
         const lastIndex = url.lastIndexOf('/', url.lastIndexOf('/') - 1);
         url = url.substring(0, lastIndex + 1);
+    } else { // otherwise photo
+        url = url.substring(0, url.lastIndexOf('/') + 1);
     }
     const items = await listItems(url);
     if (items == null) {
@@ -833,11 +835,11 @@ async function getAllAgentAccess(url = getCurrentPath()) {
 }
 
 async function copyPhoto(destinationURL) {
-    if (!destinationURL.endsWith('/')) {
-        alert('You are only allow to copy a photo to a folder. Please ensure the destination of the URL is a folder and there is a slash at the end.');
+    if (destinationURL.endsWith('/')) {
+        alert('Please ensure you have the photo name at the end of the URL.');
         return;
     }
-    const hasSubfolder = await checkFolder(destinationURL, false);
+    const hasSubfolder = await checkSubfolder(destinationURL);
     if (!hasSubfolder) {
         alert('Subfolder(s) not found. Please create corresponding subfolder(s) first.');
         return;
@@ -882,7 +884,7 @@ async function setUpMyPhotosFolder() {
                 if (!addFolderResponse.ok) {
                     throw new Error(`Failed to create folder: myPhotos: ${response.status}`);
                 }
-                setPublicAccess(photosFolderURL,true);
+                setPublicAccess(photosFolderURL, true);
             })
         } 
         fetchAndDisplayItems(photosFolderURL);
