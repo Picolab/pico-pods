@@ -64,29 +64,6 @@ document.addEventListener("DOMContentLoaded", async function() {
         });
     });
 
-    const fileInput = document.createElement('input');
-    fileInput.type = 'file';
-    fileInput.id = 'fileInput';
-    fileInput.style.display = 'none';
-    document.body.appendChild(fileInput);
-    fileInput.addEventListener('change', function(event) {
-        const file = event.target.files[0];
-        if (file) {
-
-            // Create a FileReader to read the file
-            const reader = new FileReader();
-			const filename = file.name;
-            
-            reader.onloadend = function() {
-                // reader.result contains the data URL
-                const dataURL = reader.result;
-                addPhoto(dataURL, filename);
-            };
-            
-            // Read the file as a data URL
-            reader.readAsDataURL(file);
-        }
-    });
 });
 
 async function attach(event) {
@@ -292,77 +269,6 @@ function backAction() {
     toggleControlPanel(true);
     document.getElementById('listAllSharedPhotos').classList.remove('active');
     document.getElementById('listAllPhotos').classList.remove('active');
-}
-
-function addPhotoAction2() {
-    const addPhotoBtn = document.getElementById('addPhoto');
-    const backBtn = document.getElementById('back');
-    addPhotoBtn.style.display = 'none'; // Hide the button
-
-    const container = document.createElement('div');
-    container.id = 'webIDSelectionContainer';
-    container.style.display = 'inline-flex'; 
-    container.style.alignItems = 'center';
-    container.style.gap = '5px'; 
-    container.style.marginRight = '5px';
-
-    // Add from local button
-    const addFromLocalButton = document.createElement('button');
-    addFromLocalButton.textContent = 'From local';
-    addFromLocalButton.onclick = function() {
-        document.getElementById('fileInput').click();
-    }
-
-    // Add from internet button
-    const addFromInternetButton = document.createElement('button');
-    addFromInternetButton.textContent = 'From internet';
-    addFromInternetButton.onclick = function() {
-        addFromInternetButton.style.display = 'none';
-
-        const input = document.createElement('input');
-        input.type = 'text';
-        input.id = 'photoURLInput';
-        input.className = 'addPhotoInput'; 
-        input.placeholder = 'Enter photo URL';
-        input.style.width = '150px';
-        input.style.marginRight = '5px';
-
-        const submitNewPhoto = () => {
-            const url = input.value.trim();
-			const filename = url.split('/').pop();
-            if (url) {
-                console.log(`Adding file from: ${url}`); 
-                addPhoto(url, filename);
-                input.remove(); // Remove the input field
-                container.remove(); // Remove the two extra buttons
-                addPhotoBtn.style.display = ''; // Show the add photo button again
-                fetchAndDisplayItems(getCurrentPath(), true); // Refresh the contents of the folder
-            }
-        };
-    
-        // Listen for the Enter key in the input field
-        input.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                if (input.value.trim() == '') {
-                    input.remove(); // Remove the input field
-                    container.remove(); // Remove the two extra buttons
-                    addPhotoBtn.style.display = ''; // Show the add photo button again
-                } else {
-                    submitNewPhoto();
-                }
-            }
-        });
-    
-        // Insert the input field into the DOM, before the add from local button
-        addFromLocalButton.parentNode.insertBefore(input, addFromLocalButton);
-        addFromLocalButton.style.marginTop = '9px';
-        input.focus(); // Automatically focus the input field
-    };
-
-    container.appendChild(addFromInternetButton);
-    container.appendChild(addFromLocalButton);
-
-    backBtn.parentNode.insertBefore(container, backBtn.nextSibling);
 }
 
 function addPhotoAction() {
