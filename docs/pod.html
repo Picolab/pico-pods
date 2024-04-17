@@ -9,8 +9,8 @@
 </head>
 <body>
     <p>Welcome to your pico!</p>
-    <button id="detachPod" class="detach-button" onclick="toggleDetachAttachButtons()">Detach pod</button>
-    <button id="attachPod" class="attach-button" onclick="toggleDetachAttachButtons()">Attach pod</button>
+    <button id="detachPod" class="detach-button" onclick="toggleDetachAttachButtons(true)">Detach pod</button>
+    <button id="attachPod" class="attach-button" onclick="toggleDetachAttachButtons(false)">Attach pod</button>
     <div class="navbar">
         <input type="text" id="searchInput" class="search-input" placeholder="Search...">
         <button id="searchPhoto" type="click" onclick="search()">Search photo</button>
